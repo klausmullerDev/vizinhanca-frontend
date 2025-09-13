@@ -1,12 +1,13 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 
+
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './router/ProtectedRoute';
-import { CompletarCadastro } from './pages/CompletarCadastro';
+import CompletarCadastroPage from './pages/CompletarCadastro';
 
 const router = createBrowserRouter([
   {
@@ -33,7 +34,7 @@ const router = createBrowserRouter([
     path: '/completar-cadastro',
     element: (
       <ProtectedRoute>
-        <CompletarCadastro />
+        <CompletarCadastroPage />
       </ProtectedRoute>
     ),
   },
@@ -42,7 +43,9 @@ const router = createBrowserRouter([
 function App() {
   return (
     <AuthProvider>
-      <RouterProvider router={router} />
+
+        <RouterProvider router={router} />
+
     </AuthProvider>
   );
 }

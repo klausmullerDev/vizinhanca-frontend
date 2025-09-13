@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { api } from '../services/api';
+import { api } from '../services/api'; 
 import Input from '../components/Input';
 import Button from '../components/Button';
 import Notification from '../components/Notification';
@@ -20,13 +20,11 @@ const LoginPage: React.FC = () => {
         setNotification(null);
 
         try {
-            const loginResponse = await api.post('/users/login', {
-                email,
-                password,
-            });
 
+            const loginResponse = await api.post('/users/login', { email, password });
             const { user, token } = loginResponse.data;
-            login(user, token);
+
+            login(user, token); 
 
             const profileResponse = await api.get('/users/profile');
             const { isProfileComplete } = profileResponse.data;
@@ -38,7 +36,7 @@ const LoginPage: React.FC = () => {
             }
 
         } catch (error: any) {
-            const message = error.response?.data?.message || 'Erro ao fazer login. Verifique suas credenciais.';
+            const message = error.response?.data?.message || 'Erro ao fazer login. Verifique as suas credenciais.';
             setNotification({ message, type: 'error' });
         } finally {
             setLoading(false);
