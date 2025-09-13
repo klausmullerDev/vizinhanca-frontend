@@ -1,17 +1,16 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 
-// Importando suas páginas
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './router/ProtectedRoute';
+import { CompletarCadastro } from './pages/CompletarCadastro';
 
-// 1. Aqui definimos a lista de todas as rotas (URLs) da aplicação
 const router = createBrowserRouter([
   {
-    path: '/', // A página inicial
+    path: '/',
     element: <LandingPage />,
   },
   {
@@ -30,9 +29,16 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+  {
+    path: '/completar-cadastro',
+    element: (
+      <ProtectedRoute>
+        <CompletarCadastro />
+      </ProtectedRoute>
+    ),
+  },
 ]);
 
-// 2. O componente App agora "serve" o contexto de autenticação e o roteador
 function App() {
   return (
     <AuthProvider>

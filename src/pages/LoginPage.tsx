@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom'; 
+import { useNavigate, Link } from 'react-router-dom';
+import { api } from '../services/api';
 import Input from '../components/Input';
 import Button from '../components/Button';
 import Notification from '../components/Notification';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-
 const LoginPage: React.FC = () => {
     const { login } = useAuth();
-    const navigate = useNavigate(); 
+    const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -20,20 +18,28 @@ const LoginPage: React.FC = () => {
         e.preventDefault();
         setLoading(true);
         setNotification(null);
-        try {
-            const response = await fetch(`${API_BASE_URL}/users/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.message || 'Erro ao fazer login.');
 
-            login(data.user, data.token);
-            navigate('/dashboard'); 
+        try {
+            const loginResponse = await api.post('/users/login', {
+                email,
+                password,
+            });
+
+            const { user, token } = loginResponse.data;
+            login(user, token);
+
+            const profileResponse = await api.get('/users/profile');
+            const { isProfileComplete } = profileResponse.data;
+
+            if (isProfileComplete) {
+                navigate('/dashboard');
+            } else {
+                navigate('/completar-cadastro');
+            }
 
         } catch (error: any) {
-            setNotification({ message: error.message, type: 'error' });
+            const message = error.response?.data?.message || 'Erro ao fazer login. Verifique suas credenciais.';
+            setNotification({ message, type: 'error' });
         } finally {
             setLoading(false);
         }
@@ -51,7 +57,6 @@ const LoginPage: React.FC = () => {
                 </form>
                 <p className="mt-4 text-center text-sm text-gray-600">
                     Não tem uma conta?{' '}
-                    
                     <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
                         Cadastre-se
                     </Link>
