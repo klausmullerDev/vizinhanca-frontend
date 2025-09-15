@@ -5,9 +5,10 @@ import { AuthProvider } from './context/AuthContext';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import Dashboard from './pages/Dashboard';
+import { Dashboard } from './pages/Dashboard';
 import ProtectedRoute from './router/ProtectedRoute';
 import CompletarCadastroPage from './pages/CompletarCadastro';
+import { DetalhesPedido } from './pages/DetalhesPedido';
 
 const router = createBrowserRouter([
   {
@@ -30,7 +31,7 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-  {
+    {
     path: '/completar-cadastro',
     element: (
       <ProtectedRoute>
@@ -38,7 +39,17 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+  {
+    // 2. Adicione a nova rota dinâmica aqui
+    path: '/pedidos/:id',
+    element: (
+      <ProtectedRoute>
+        <DetalhesPedido />
+      </ProtectedRoute>
+    ),
+  },
 ]);
+
 
 function App() {
   return (
