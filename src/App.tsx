@@ -9,6 +9,7 @@ import { Dashboard } from './pages/Dashboard';
 import ProtectedRoute from './router/ProtectedRoute';
 import CompletarCadastroPage from './pages/CompletarCadastro';
 import { DetalhesPedido } from './pages/DetalhesPedido';
+import { PerfilPage } from './pages/PerfilPage';
 
 const router = createBrowserRouter([
   {
@@ -48,7 +49,16 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+  {
+    path: '/perfil',
+    element: (
+      <ProtectedRoute>
+        <PerfilPage />
+      </ProtectedRoute>
+    )
+  }
 ]);
+
 
 
 function App() {
