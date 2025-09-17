@@ -1,5 +1,6 @@
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
+// NOVO: Importe o useAuth para o redirecionamento
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 
 import LandingPage from './pages/LandingPage';
@@ -10,6 +11,15 @@ import ProtectedRoute from './router/ProtectedRoute';
 import CompletarCadastroPage from './pages/CompletarCadastro';
 import { DetalhesPedido } from './pages/DetalhesPedido';
 import { PerfilPage } from './pages/PerfilPage';
+import { EditarPerfilPage } from './pages/EditarPerfilPage';
+
+
+
+const ProfileRedirect = () => {
+  const { user } = useAuth();
+
+  return user ? <Navigate to={`/perfil/${user.id}`} replace /> : <Navigate to="/dashboard" />;
+};
 
 const router = createBrowserRouter([
   {
@@ -32,7 +42,7 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-    {
+  {
     path: '/completar-cadastro',
     element: (
       <ProtectedRoute>
@@ -41,7 +51,6 @@ const router = createBrowserRouter([
     ),
   },
   {
-    // 2. Adicione a nova rota dinâmica aqui
     path: '/pedidos/:id',
     element: (
       <ProtectedRoute>
@@ -50,10 +59,28 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: '/perfil',
+
+    path: '/perfil/:userId',
     element: (
       <ProtectedRoute>
         <PerfilPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+
+    path: '/perfil',
+    element: (
+      <ProtectedRoute>
+        <ProfileRedirect />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: '/perfil/editar',
+    element: (
+      <ProtectedRoute>
+        <EditarPerfilPage />
       </ProtectedRoute>
     )
   }
@@ -64,9 +91,7 @@ const router = createBrowserRouter([
 function App() {
   return (
     <AuthProvider>
-
-        <RouterProvider router={router} />
-
+      <RouterProvider router={router} />
     </AuthProvider>
   );
 }
