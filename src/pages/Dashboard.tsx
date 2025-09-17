@@ -14,7 +14,6 @@ import { EmptyState } from '../components/Ui/EmptyState';
 import { FloatingActionButton } from '../components/Ui/FloatingActionButton';
 import { DashboardHeader } from '../components/Ui/DashboardHeader';
 
-// Tipo atualizado
 type Author = { id: string; name: string };
 type Pedido = {
     id: string;
@@ -33,7 +32,6 @@ export const Dashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-    // O estado myInterests foi removido
 
     const [modalDetalhesAberto, setModalDetalhesAberto] = useState<Pedido | null>(null);
     const [modalNovoPedidoAberto, setModalNovoPedidoAberto] = useState(false);
@@ -72,19 +70,16 @@ export const Dashboard: React.FC = () => {
         setNotification({ message: 'Pedido apagado com sucesso.', type: 'success' });
     };
 
-    // Função de interesse atualizada
     const handleManifestarInteresse = async (pedidoId: string) => {
         try {
             await api.post(`/pedidos/${pedidoId}/interesse`);
 
-            // 1. Atualiza a lista principal de pedidos (como você já fazia)
             setPedidos(pedidosAtuais =>
                 pedidosAtuais.map(p =>
                     p.id === pedidoId ? { ...p, currentUserHasInterest: true } : p
                 )
             );
 
-            // 2. ATUALIZA TAMBÉM O ESTADO DO MODAL QUE ESTÁ ABERTO
             if (modalDetalhesAberto && modalDetalhesAberto.id === pedidoId) {
                 setModalDetalhesAberto(prevModalData => ({
                     ...prevModalData!,

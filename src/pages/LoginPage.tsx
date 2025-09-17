@@ -53,6 +53,11 @@ const LoginPage: React.FC = () => {
                     <Input id="password" label="Senha" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
                     <Button type="submit" loading={loading}>Entrar</Button>
                 </form>
+                <div className="mt-4 text-center">
+                    <Link to="/esqueci-senha" className="font-medium text-indigo-600 hover:text-indigo-500">
+                        Esqueceu sua senha?
+                    </Link>
+                </div>
                 <p className="mt-4 text-center text-sm text-gray-600">
                     Não tem uma conta?{' '}
                     <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-500">

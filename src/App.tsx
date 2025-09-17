@@ -1,5 +1,5 @@
+import 'bootstrap/dist/css/bootstrap.min.css';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
-// NOVO: Importe o useAuth para o redirecionamento
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 
@@ -12,6 +12,8 @@ import CompletarCadastroPage from './pages/CompletarCadastro';
 import { DetalhesPedido } from './pages/DetalhesPedido';
 import { PerfilPage } from './pages/PerfilPage';
 import { EditarPerfilPage } from './pages/EditarPerfilPage';
+import EsqueciSenha from './pages/EsqueciSenha.tsx'; 
+import RedefinirSenha from './pages/RedefinirSenha.tsx';
 
 
 
@@ -33,6 +35,14 @@ const router = createBrowserRouter([
   {
     path: '/register',
     element: <RegisterPage />,
+  },
+  {
+    path: '/esqueci-senha',
+    element: <EsqueciSenha />,
+  },
+  {
+    path: '/redefinir-senha/:token',
+    element: <RedefinirSenha />,
   },
   {
     path: '/dashboard',
