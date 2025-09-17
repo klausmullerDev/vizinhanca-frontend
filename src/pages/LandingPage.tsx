@@ -10,11 +10,11 @@ const LandingPage: React.FC = () => {
             style={{ backgroundImage: `url(${BackgroundImage})` }}
         >
             <header className="shadow-sm bg-white bg-opacity-80 backdrop-filter backdrop-blur-sm">
-                <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-                    <h1 className="text-xl font-bold text-gray-800">Vizinhança Solidária</h1>
-                    <div>
-                        <Link to="/login" className="text-indigo-600 font-semibold mr-4 hover:underline">Login</Link>
-                        <Link to="/register" className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors">Cadastre-se</Link>
+                <div className="container mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center">
+                    <h1 className="text-xl font-bold text-gray-800 mb-2 sm:mb-0">Vizinhança Solidária</h1>
+                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
+                        <Link to="/login" className="text-indigo-600 font-semibold text-center hover:underline">Login</Link>
+                        <Link to="/register" className="bg-indigo-600 text-white px-4 py-2 text-center rounded-md hover:bg-indigo-700 transition-colors">Cadastre-se</Link>
                     </div>
                 </div>
             </header>
