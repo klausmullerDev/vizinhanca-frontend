@@ -13,6 +13,7 @@ import { Loader } from '../components/Ui/Loader';
 import { EmptyState } from '../components/Ui/EmptyState';
 import { FloatingActionButton } from '../components/Ui/FloatingActionButton';
 import { DashboardHeader } from '../components/Ui/DashboardHeader';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 type Author = { id: string; name: string };
 type Pedido = {
@@ -119,7 +120,12 @@ export const Dashboard: React.FC = () => {
 
     return (
         <div className="bg-slate-50 min-h-screen font-sans">
-            {notification && <Notification {...notification} onClose={() => setNotification(null)} />}
+            <ErrorBoundary>
+                <Notification 
+                    notification={notification} 
+                    onClose={() => setNotification(null)} 
+                />
+            </ErrorBoundary>
             <DashboardHeader user={user} />
             <main className="py-8 px-4 max-w-2xl mx-auto">
                 {renderContent()}
