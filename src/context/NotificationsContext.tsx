@@ -35,9 +35,22 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 
   const markAsRead = async (id: string) => {
     try {
+      // Optimistic UI update
+      const originalNotifications = notifications;
+      setNotifications(prev => 
+        prev.map(n => n.id === id ? { ...n, lida: true } : n)
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+
       await notificationsService.markAsRead(id);
-      await Promise.all([fetchNotifications(), fetchUnreadCount()]);
+      // Optional: Refetch in the background to ensure data consistency
+      // await Promise.all([fetchNotifications(), fetchUnreadCount()]);
     } catch (error) {
+      // Rollback on error
+      setNotifications(prev => 
+        prev.map(n => n.id === id ? { ...n, lida: false } : n)
+      );
+      setUnreadCount(prev => prev + 1);
       console.error('Erro ao marcar notificação como lida:', error);
     }
   };

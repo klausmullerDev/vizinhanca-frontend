@@ -1,13 +1,21 @@
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Bell, CheckCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../context/NotificationsContext';
 
 export function NotificationsList() {
   const { notifications, markAsRead } = useNotifications();
+  const navigate = useNavigate();
+
+  const handleNotificationClick = (notificationId: string, pedidoId: string) => {
+    // Navigate to the order details page
+    navigate(`/pedidos/${pedidoId}`);
+    markAsRead(notificationId);
+  };
 
   return (
-    <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
+    <div className="overflow-y-auto">
       {notifications.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-8 text-gray-500">
           <Bell className="w-12 h-12 mb-3 text-gray-400" />
@@ -18,9 +26,13 @@ export function NotificationsList() {
           {notifications.map((notification) => (
             <div 
               key={notification.id}
-              className={`p-4 hover:bg-gray-50 transition-colors ${
+              className={`p-4 transition-colors ${
                 notification.lida ? 'bg-white' : 'bg-blue-50/60'
-              }`}
+              } ${notification.pedidoId ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+              onClick={() => 
+                notification.pedidoId && 
+                handleNotificationClick(notification.id, notification.pedidoId)
+              }
             >
               <div className="flex gap-3 items-start">
                 <div className="flex-1">
@@ -33,7 +45,10 @@ export function NotificationsList() {
                     </span>
                     {!notification.lida && (
                       <button
-                        onClick={() => markAsRead(notification.id)}
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent container's onClick
+                          markAsRead(notification.id);
+                        }}
                         className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
                       >
                         <CheckCircle className="w-4 h-4" />

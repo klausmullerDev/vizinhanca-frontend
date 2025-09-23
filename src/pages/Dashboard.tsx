@@ -146,6 +146,7 @@ export const Dashboard: React.FC = () => {
                     isOpen={modalNovoPedidoAberto}
                     onClose={() => setModalNovoPedidoAberto(false)}
                     onPedidoCriado={onPedidoCriado}
+                    setNotification={setNotification}
                 />
             )}
             {modalEdicaoAberto && (
@@ -153,6 +154,7 @@ export const Dashboard: React.FC = () => {
                     pedido={modalEdicaoAberto}
                     onClose={() => setModalEdicaoAberto(null)}
                     onPedidoAtualizado={onPedidoAtualizado}
+                    setNotification={setNotification}
                 />
             )}
         </div>

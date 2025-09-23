@@ -111,7 +111,7 @@ const CompletarCadastroPage: React.FC = () => {
       <div className="w-full max-w-lg bg-white p-8 rounded-lg shadow-md">
         <h2 className="text-2xl font-bold text-center text-gray-900 mb-6">Complete o seu Perfil</h2>
         <p className="text-center text-gray-600 mb-6">Para continuar, precisamos de mais algumas informações.</p>
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md-grid-cols-2 gap-4" autoComplete="off">
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4" autoComplete="off">
           <MaskedInput id="cpf" label="CPF" mask="000.000.000-00" value={formData.cpf} onChange={handleChange} required placeholder="000.000.000-00" autoComplete="off" />
           <MaskedInput id="telefone" label="Telefone" mask="(00) 00000-0000" value={formData.telefone} onChange={handleChange} required placeholder="(00) 00000-0000" autoComplete="off" />
           <div className="flex flex-col">

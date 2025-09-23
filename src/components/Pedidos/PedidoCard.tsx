@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
 
 // Tipos (podem ser movidos para um arquivo types.ts)
@@ -34,9 +34,26 @@ interface CardPedidoProps {
 
 export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, onVerDetalhes, onEditar, onDeletar }) => {
   const [menuAberto, setMenuAberto] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   const isMyPedido = loggedInUser?.id === pedido.author.id;
 
+  // Hook para fechar o menu ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuAberto(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [menuRef]);
+
   const handleDelete = async () => {
+    setMenuAberto(false);
     if (window.confirm('Tem certeza que deseja apagar este pedido?')) {
       try {
         await api.delete(`/pedidos/${pedido.id}`);
@@ -45,7 +62,6 @@ export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, on
         alert('Não foi possível apagar o pedido.');
       }
     }
-    setMenuAberto(false);
   };
 
   return (
@@ -62,7 +78,7 @@ export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, on
             </div>
           </Link>
           {isMyPedido && (
-            <div className="relative">
+            <div className="relative" ref={menuRef}>
               <button onClick={() => setMenuAberto(!menuAberto)} className="p-1 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800">
                 <MoreVerticalIcon />
               </button>
@@ -75,8 +91,12 @@ export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, on
             </div>
           )}
         </div>
-        <h2 className="text-xl font-bold text-slate-900 mb-2 leading-tight">{pedido.titulo}</h2>
-        <p className="text-slate-600 line-clamp-3">{pedido.descricao}</p>
+        <div className="cursor-pointer" onClick={onVerDetalhes}>
+          <h2 className="text-xl font-bold text-slate-900 mb-2 leading-tight group-hover:text-indigo-600 transition-colors">
+            {pedido.titulo}
+          </h2>
+          <p className="text-slate-600 line-clamp-3">{pedido.descricao}</p>
+        </div>
       </div>
       <div className="bg-slate-50/70 border-t border-slate-200 px-5 py-3 flex justify-end">
         <button onClick={onVerDetalhes} className="w-full sm:w-auto bg-indigo-100 text-indigo-700 font-bold py-2 px-4 rounded-lg hover:bg-indigo-200 transition-colors text-sm">

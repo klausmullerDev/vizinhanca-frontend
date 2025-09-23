@@ -1,23 +1,36 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { ArrowLeft, Calendar, Check, User } from 'lucide-react';
+
 import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { Loader } from '../components/Ui/Loader';
+import Notification from '../components/Notification';
 
 type PedidoDetalhado = {
   id: string;
   titulo: string;
   descricao: string;
   status: string;
+  createdAt: string;
   autor: {
+    id: string;
     name: string;
   };
+  currentUserHasInterest: boolean;
 };
 
 export function DetalhesPedido() {
   const { id } = useParams<{ id: string }>();
-  
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
   const [pedido, setPedido] = useState<PedidoDetalhado | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -25,49 +38,111 @@ export function DetalhesPedido() {
     async function carregarDetalhes() {
       try {
         setLoading(true);
+        setError(null);
         const response = await api.get(`/pedidos/${id}`);
         setPedido(response.data);
-      } catch (err) {
+      } catch (err: any) {
         setError('Não foi possível encontrar este pedido. Ele pode ter sido removido.');
-        console.error('Erro ao buscar detalhes do pedido:', err);
       } finally {
         setLoading(false);
       }
     }
 
     carregarDetalhes();
-  }, [id]); 
+  }, [id]);
+
+  const handleManifestarInteresse = async () => {
+    if (!pedido) return;
+    try {
+      await api.post(`/pedidos/${pedido.id}/interesse`);
+      setPedido(p => p ? { ...p, currentUserHasInterest: true } : null);
+      setNotification({ message: 'Interesse registrado! O morador foi notificado.', type: 'success' });
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Erro ao registrar interesse.';
+      setNotification({ message, type: 'error' });
+    }
+  };
+
+  const isMyPedido = user?.id === pedido?.autor.id;
 
   if (loading) {
-    return <div className="text-center mt-12">Carregando detalhes do pedido...</div>;
+    return <div className="flex justify-center items-center h-screen"><Loader /></div>;
   }
 
   if (error || !pedido) {
-    return <div className="text-center mt-12 text-red-500">{error}</div>;
+    return (
+      <div className="flex flex-col justify-center items-center h-screen text-center p-4">
+        <h2 className="text-xl font-semibold text-red-600">{error || "Pedido não encontrado."}</h2>
+        <button onClick={() => navigate('/dashboard')} className="mt-4 bg-indigo-100 text-indigo-700 font-bold py-2 px-4 rounded-lg hover:bg-indigo-200 transition-colors text-sm">
+          Voltar ao Mural
+        </button>
+      </div>
+    );
   }
 
   return (
-    <div className="bg-gray-100 min-h-screen p-8">
-      <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8">
-        <header className="border-b pb-4 mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">{pedido.titulo}</h1>
-          <p className="text-sm text-gray-500 mt-2">
-            Pedido por: <span className="font-semibold">{pedido.autor?.name || 'Vizinhança'}</span>
-          </p>
-        </header>
-        
-        <main>
-          <p className="text-gray-700 leading-relaxed">
-            {pedido.descricao}
-          </p>
-        </main>
+    <div className="bg-slate-50 min-h-screen font-sans">
+      <Notification notification={notification} onClose={() => setNotification(null)} />
 
-        <footer className="mt-8 pt-6 border-t flex justify-end">
-          <button className="bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 transition duration-300">
-            Eu Quero Ajudar!
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto flex items-center p-4">
+          <button onClick={() => navigate('/dashboard')} className="p-2 rounded-full hover:bg-slate-100 mr-2 md:mr-4" aria-label="Voltar ao mural">
+            <ArrowLeft className="w-5 h-5 text-slate-600" />
           </button>
-        </footer>
-      </div>
+          <h1 className="text-xl md:text-2xl font-bold text-slate-800 line-clamp-1" title={pedido.titulo}>{pedido.titulo}</h1>
+        </div>
+      </header>
+
+      <main className="py-8 px-4 max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Coluna principal */}
+        <div className="md:col-span-2 bg-white border border-slate-200 rounded-lg shadow-sm p-6 md:p-8">
+          <h2 className="text-2xl font-bold text-slate-900 mb-4">Detalhes do Pedido</h2>
+          <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">{pedido.descricao}</p>
+        </div>
+
+        {/* Coluna da barra lateral */}
+        <div className="md:col-span-1 space-y-6">
+          <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-slate-800 mb-4">Ação</h3>
+            {isMyPedido ? (
+              <button disabled className="w-full bg-slate-200 text-slate-500 font-bold py-3 rounded-lg cursor-not-allowed">Este é o seu pedido</button>
+            ) : pedido.currentUserHasInterest ? (
+              <button disabled className="w-full bg-green-600 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2">
+                <Check className="w-5 h-5" />
+                Interesse Enviado!
+              </button>
+            ) : (
+              <button onClick={handleManifestarInteresse} className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition-colors">
+                Eu Quero Ajudar!
+              </button>
+            )}
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold text-slate-800 mb-4">Informações</h3>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <User className="w-5 h-5 text-slate-400" />
+                <div>
+                  <span className="text-sm text-slate-500">Pedido por</span>
+                  <Link to={`/perfil/${pedido.autor.id}`} className="block font-semibold text-slate-800 hover:text-indigo-600">
+                    {pedido.autor.name}
+                  </Link>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Calendar className="w-5 h-5 text-slate-400" />
+                <div>
+                  <span className="text-sm text-slate-500">Data</span>
+                  <p className="font-semibold text-slate-800">
+                    {format(new Date(pedido.createdAt), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

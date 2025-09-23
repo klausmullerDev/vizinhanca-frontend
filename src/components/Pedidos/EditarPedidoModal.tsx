@@ -1,4 +1,4 @@
-import React, { type FormEvent } from 'react';
+import React, { useState, useEffect, type FormEvent } from 'react';
 import { api } from '../../services/api';
 
 // Tipos
@@ -10,21 +10,36 @@ interface EditarPedidoModalProps {
     pedido: Pedido;
     onClose: () => void;
     onPedidoAtualizado: () => void;
+    setNotification: (notification: { message: string; type: 'success' | 'error' } | null) => void;
 }
 
-export const EditarPedidoModal: React.FC<EditarPedidoModalProps> = ({ pedido, onClose, onPedidoAtualizado }) => {
+export const EditarPedidoModal: React.FC<EditarPedidoModalProps> = ({ pedido, onClose, onPedidoAtualizado, setNotification }) => {
+    const [titulo, setTitulo] = useState(pedido.titulo);
+    const [descricao, setDescricao] = useState(pedido.descricao);
+    const [loading, setLoading] = useState(false);
+
+    // Sincroniza o estado se o pedido prop mudar
+    useEffect(() => {
+        setTitulo(pedido.titulo);
+        setDescricao(pedido.descricao);
+    }, [pedido]);
 
     const handleUpdate = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        const form = e.currentTarget;
-        const titulo = (form.elements.namedItem('titulo') as HTMLInputElement).value;
-        const descricao = (form.elements.namedItem('descricao') as HTMLTextAreaElement).value;
+        if (!titulo.trim() || !descricao.trim()) {
+            setNotification({ message: 'Título e descrição são obrigatórios.', type: 'error' });
+            return;
+        }
+        setLoading(true);
 
         try {
             await api.patch(`/pedidos/${pedido.id}`, { titulo, descricao });
             onPedidoAtualizado();
-        } catch (error) {
-            alert('Não foi possível atualizar o pedido.');
+        } catch (error: any) {
+            const message = error.response?.data?.message || 'Não foi possível atualizar o pedido.';
+            setNotification({ message, type: 'error' });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -40,14 +55,32 @@ export const EditarPedidoModal: React.FC<EditarPedidoModalProps> = ({ pedido, on
                     <form onSubmit={handleUpdate} className="p-6 space-y-4">
                         <div>
                             <label htmlFor="titulo-edit" className="block text-sm font-medium text-slate-700 mb-1">Título</label>
-                            <input type="text" id="titulo-edit" name="titulo" required defaultValue={pedido.titulo} className="block w-full border-slate-300 rounded-md" />
+                            <input 
+                                type="text" 
+                                id="titulo-edit" 
+                                name="titulo" 
+                                value={titulo}
+                                onChange={(e) => setTitulo(e.target.value)}
+                                required 
+                                className="block w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" 
+                            />
                         </div>
                         <div>
                             <label htmlFor="descricao-edit" className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
-                            <textarea id="descricao-edit" name="descricao" rows={4} required defaultValue={pedido.descricao} className="block w-full border-slate-300 rounded-md"></textarea>
+                            <textarea 
+                                id="descricao-edit" 
+                                name="descricao" 
+                                rows={4} 
+                                value={descricao}
+                                onChange={(e) => setDescricao(e.target.value)}
+                                required 
+                                className="block w-full border-slate-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            ></textarea>
                         </div>
                         <div className="flex justify-end pt-4">
-                            <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-3 px-5 rounded-lg hover:bg-indigo-700">Salvar Alterações</button>
+                            <button type="submit" disabled={loading} className="w-full bg-indigo-600 text-white font-bold py-3 px-5 rounded-lg hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed">
+                                {loading ? 'Salvando...' : 'Salvar Alterações'}
+                            </button>
                         </div>
                     </form>
                 </div>

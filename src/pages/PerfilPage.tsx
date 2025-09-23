@@ -120,10 +120,11 @@ export const PerfilPage: React.FC = () => {
                             {pedidos.length > 0 ? (
                                 pedidos.map(pedido => (
                                     <div key={pedido.id} className="border-b border-slate-200 pb-4 last:border-b-0">
-                                        <h4 className="font-semibold text-slate-800 hover:text-indigo-600">
-                                            {/* Link para o modal de detalhes (se o modal for no dashboard) */}
-                                            {pedido.titulo}
-                                        </h4>
+                                        <Link to={`/pedidos/${pedido.id}`}>
+                                            <h4 className="font-semibold text-slate-800 hover:text-indigo-600">
+                                                {pedido.titulo}
+                                            </h4>
+                                        </Link>
                                         <p className="text-sm text-slate-600 mt-1 line-clamp-2">{pedido.descricao}</p>
                                         <p className="text-xs text-slate-400 mt-2">Criado em {new Date(pedido.createdAt).toLocaleDateString()}</p>
                                     </div>
@@ -138,7 +139,3 @@ export const PerfilPage: React.FC = () => {
         </div>
     );
 };
-
-// Adicione estas classes ao seu CSS global se desejar
-// .label-style { @apply block text-xs font-semibold text-slate-500 uppercase tracking-wider; }
-// .p-style { @apply text-md text-slate-800 mt-1; }
