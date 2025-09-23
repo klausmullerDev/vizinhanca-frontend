@@ -5,18 +5,17 @@ import { useNavigate } from 'react-router-dom';
 
 import { api } from '../services/api';
 
-
 import Input from '../components/Input';
 import Select from '../components/Select';
 import Button from '../components/Button';
 import Notification from '../components/Notification';
 import MaskedInput from '../components/MaskedInput';
-
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 const CompletarCadastroPage: React.FC = () => {
 
   const navigate = useNavigate();
-
 
   const [formData, setFormData] = useState({
     cpf: '',
@@ -57,6 +56,11 @@ const CompletarCadastroPage: React.FC = () => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
   };
 
+  
+  const handleDateChange = (date: Date | null) => {
+    setFormData({ ...formData, dataDeNascimento: date ? date.toISOString().split('T')[0] : '' });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -65,7 +69,7 @@ const CompletarCadastroPage: React.FC = () => {
     const profileData = {
       cpf: formData.cpf.replace(/\D/g, ''),
       telefone: formData.telefone.replace(/\D/g, ''),
-      dataDeNascimento: formData.dataDeNascimento,
+      dataDeNascimento: formData.dataDeNascimento ? new Date(formData.dataDeNascimento) : undefined,
       sexo: formData.sexo,
       endereco: {
         rua: formData.rua,
@@ -79,11 +83,8 @@ const CompletarCadastroPage: React.FC = () => {
 
     try {
       console.log('Enviando dados para a API:', profileData);
-
       await api.put('/users/profile', profileData);
-
       setNotification({ message: 'Perfil atualizado com sucesso! Redirecionando...', type: 'success' });
-
       setTimeout(() => navigate('/dashboard'), 1500);
 
     } catch (error: any) {
@@ -110,7 +111,16 @@ const CompletarCadastroPage: React.FC = () => {
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md-grid-cols-2 gap-4" autoComplete="off">
           <MaskedInput id="cpf" label="CPF" mask="000.000.000-00" value={formData.cpf} onChange={handleChange} required placeholder="000.000.000-00" autoComplete="off" />
           <MaskedInput id="telefone" label="Telefone" mask="(00) 00000-0000" value={formData.telefone} onChange={handleChange} required placeholder="(00) 00000-0000" autoComplete="off" />
-          <Input id="dataDeNascimento" label="Data de Nascimento" type="date" value={formData.dataDeNascimento} onChange={handleChange} required autoComplete="off" />
+          <div className="flex flex-col">
+            <label className="mb-1 text-sm font-medium text-gray-700">Data de Nascimento</label>
+            <DatePicker
+              selected={formData.dataDeNascimento ? new Date(formData.dataDeNascimento + 'T00:00:00') : null}
+              onChange={handleDateChange}
+              dateFormat="dd/MM/yyyy"
+              placeholderText="DD/MM/YYYY"
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            />
+          </div>
           <Select id="sexo" label="Gênero" options={sexoOptions} value={formData.sexo} onChange={handleChange} />
           <h3 className="text-lg font-semibold pt-4 md:col-span-2">Endereço</h3>
           <MaskedInput id="cep" label="CEP" mask="00000-000" value={formData.cep} onChange={handleChange} required placeholder="00000-000" autoComplete="off" />
@@ -129,4 +139,3 @@ const CompletarCadastroPage: React.FC = () => {
 };
 
 export default CompletarCadastroPage;
-
