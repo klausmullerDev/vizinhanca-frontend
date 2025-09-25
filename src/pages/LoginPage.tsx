@@ -27,16 +27,7 @@ const LoginPage: React.FC = () => {
             const { user, token } = loginResponse.data;
 
             login(user, token);
-
-            const profileResponse = await api.get('/users/profile');
-            const { isProfileComplete } = profileResponse.data;
-
-            if (isProfileComplete) {
-                navigate('/dashboard');
-            } else {
-                navigate('/completar-cadastro');
-            }
-
+            navigate('/dashboard');
         } catch (error: any) {
             const message = error.response?.data?.message || 'Erro ao fazer login.';
             setFormError(message);

@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from 'react';
 import type { ApiNotification } from '../types/notification';
 import { notificationsService } from '../services/notifications';
+import { useAuth } from './AuthContext';
 
 interface NotificationsContextData {
   notifications: ApiNotification[];
@@ -12,45 +13,46 @@ interface NotificationsContextData {
 export const NotificationsContext = createContext({} as NotificationsContextData);
 
 export function NotificationsProvider({ children }: { children: ReactNode }) {
+  const { isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState<ApiNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       const response = await notificationsService.getAll();
       setNotifications(response.data);
     } catch (error) {
       console.error('Erro ao buscar notificações:', error);
     }
-  };
+  }, []);
 
-  const fetchUnreadCount = async () => {
+  const fetchUnreadCount = useCallback(async () => {
     try {
       const response = await notificationsService.getUnreadCount();
-      setUnreadCount(response.data.quantidade.quantidade);
+      // Adicionando uma verificação para tornar o acesso mais seguro
+      setUnreadCount(response.data?.quantidade?.quantidade ?? 0);
     } catch (error) {
       console.error('Erro ao buscar contagem de notificações:', error);
     }
-  };
+  }, []);
 
   const markAsRead = async (id: string) => {
-    try {
-      // Optimistic UI update
-      const originalNotifications = notifications;
-      setNotifications(prev => 
-        prev.map(n => n.id === id ? { ...n, lida: true } : n)
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
+    // Salva o estado original para um rollback seguro
+    const originalNotifications = [...notifications];
+    const originalCount = unreadCount;
 
+    // Atualização otimista da UI
+    setNotifications(prev => 
+      prev.map(n => n.id === id ? { ...n, lida: true } : n)
+    );
+    setUnreadCount(prev => Math.max(0, prev - 1));
+
+    try {
       await notificationsService.markAsRead(id);
-      // Optional: Refetch in the background to ensure data consistency
-      // await Promise.all([fetchNotifications(), fetchUnreadCount()]);
     } catch (error) {
-      // Rollback on error
-      setNotifications(prev => 
-        prev.map(n => n.id === id ? { ...n, lida: false } : n)
-      );
-      setUnreadCount(prev => prev + 1);
+      // Rollback em caso de erro, restaurando o estado original
+      setNotifications(originalNotifications);
+      setUnreadCount(originalCount);
       console.error('Erro ao marcar notificação como lida:', error);
     }
   };
@@ -60,15 +62,21 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    fetchNotifications();
-    fetchUnreadCount();
+    // Só busca notificações se o usuário estiver autenticado
+    if (isAuthenticated) {
+      refetchNotifications();
 
-    const interval = setInterval(() => {
-      fetchUnreadCount();
-    }, 30000); // Check every 30 seconds
+      const interval = setInterval(() => {
+        fetchUnreadCount();
+      }, 30000); // Check every 30 seconds
 
-    return () => clearInterval(interval);
-  }, []);
+      return () => clearInterval(interval);
+    } else {
+      // Limpa o estado se o usuário deslogar
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  }, [isAuthenticated, fetchNotifications, fetchUnreadCount, refetchNotifications]);
 
   return (
     <NotificationsContext.Provider 

@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationsProvider } from './context/NotificationsContext';
 
@@ -23,86 +23,67 @@ const ProfileRedirect = () => {
   return user ? <Navigate to={`/perfil/${user.id}`} replace /> : <Navigate to="/dashboard" />;
 };
 
-const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <LandingPage />,
-  },
-  {
-    path: '/login',
-    element: <LoginPage />,
-  },
-  {
-    path: '/register',
-    element: <RegisterPage />,
-  },
-  {
-    path: '/esqueci-senha',
-    element: <EsqueciSenhaPage />,
-  },
-  {
-    path: '/redefinir-senha/:token',
-    element: <RedefinirSenhaPage />,
-  },
-  {
-    path: '/dashboard',
-    element: (
-      <ProtectedRoute>
-        <Dashboard />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/completar-cadastro',
-    element: (
-      <ProtectedRoute>
-        <CompletarCadastroPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/pedidos/:id',
-    element: (
-      <ProtectedRoute>
-        <DetalhesPedido />
-      </ProtectedRoute>
-    ),
-  },
-  {
-
-    path: '/perfil/:userId',
-    element: (
-      <ProtectedRoute>
-        <PerfilPage />
-      </ProtectedRoute>
-    )
-  },
-  {
-
-    path: '/perfil',
-    element: (
-      <ProtectedRoute>
-        <ProfileRedirect />
-      </ProtectedRoute>
-    )
-  },
-  {
-    path: '/perfil/editar',
-    element: (
-      <ProtectedRoute>
-        <EditarPerfilPage />
-      </ProtectedRoute>
-    )
-  }
-]);
-
-
-
 function App() {
   return (
     <AuthProvider>
       <NotificationsProvider>
-        <RouterProvider router={router} />
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/esqueci-senha" element={<EsqueciSenhaPage />} />
+          <Route path="/redefinir-senha/:token" element={<RedefinirSenhaPage />} />
+
+          {/* Rotas Protegidas */}
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/completar-cadastro" 
+            element={
+              <ProtectedRoute>
+                <CompletarCadastroPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/pedidos/:id" 
+            element={
+              <ProtectedRoute>
+                <DetalhesPedido />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/perfil/:userId" 
+            element={
+              <ProtectedRoute>
+                <PerfilPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/perfil" 
+            element={
+              <ProtectedRoute>
+                <ProfileRedirect />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/perfil/editar" 
+            element={
+              <ProtectedRoute>
+                <EditarPerfilPage />
+              </ProtectedRoute>
+            } 
+          />
+        </Routes>
       </NotificationsProvider>
     </AuthProvider>
   );
