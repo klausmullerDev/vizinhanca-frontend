@@ -1,12 +1,18 @@
-import React, { createContext, useState, useContext, useEffect, type ReactNode } from 'react';
+import React, { createContext, useState, useContext, useEffect, type ReactNode, useCallback, useMemo } from 'react';
 import { api } from '../services/api';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 // Tipos
-type User = {
+export type User = {
     id: string;
     name: string;
     email: string;
+    avatar?: string;
+    cpf?: string;
+    telefone?: string;
+    dataDeNascimento?: string;
+    sexo?: string;
+    endereco?: object; // Pode ser mais específico se tiver um tipo Endereco
 };
 
 type AuthContextType = {
@@ -37,12 +43,13 @@ const AuthEffects = () => {
             if (storedToken) {
                 api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
                 try {
-                    // Apenas buscamos os dados básicos do usuário aqui
-                    const response = await api.get('/users/me'); // Supondo que esta rota retorne o User
+                    // ALTERADO: Usando /users/profile que sabemos que existe.
+                    const response = await api.get('/users/profile');
                     setUser(response.data);
                 } catch (error) {
                     console.error("Sessão inválida, limpando token.", error);
-                    localStorage.removeItem('authToken');
+                    // CORRIGIDO: Chama logout() para limpar completamente a sessão.
+                    logout();
                 }
             }
             // Importante: finaliza o carregamento mesmo se não houver token
@@ -51,27 +58,23 @@ const AuthEffects = () => {
 
         loadUserFromStorage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Roda apenas uma vez
+    }, [logout, setUser, setLoading]); // Adicionando dependências estáveis
 
     // Efeito para verificar se o perfil está completo após o login/carregamento
     useEffect(() => {
-        const checkProfileCompletion = async () => {
-            if (user && location.pathname !== '/completar-cadastro') {
-                try {
-                    const profileResponse = await api.get('/users/profile');
-                    const { isProfileComplete } = profileResponse.data;
-
-                    if (!isProfileComplete) {
-                        navigate('/completar-cadastro', { replace: true });
-                    }
-                } catch (error) {
-                    console.error("Erro ao verificar a completude do perfil:", error);
-                    logout();
+        const checkProfileCompletion = () => {
+            // Se o usuário está logado, mas não tem CPF ou telefone,
+            // consideramos o perfil incompleto e o redirecionamos.
+            // Isso evita uma chamada extra à API e é mais robusto.
+            if (user && (!user.cpf || !user.telefone)) {
+                // Evita redirecionamentos infinitos se já estivermos na página correta.
+                if (location.pathname !== '/completar-cadastro') {
+                    navigate('/completar-cadastro', { replace: true });
                 }
             }
         };
         checkProfileCompletion();
-    }, [user, location.pathname, navigate, logout]);
+    }, [user, location.pathname, navigate]);
 
     return null; // Este componente não renderiza nada, apenas executa efeitos.
 }
@@ -81,19 +84,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true); // Começa como true
 
-    const login = (userData: User, token: string) => {
+    const login = useCallback((userData: User, token: string) => {
         localStorage.setItem('authToken', token);
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         setUser(userData);
-    };
+    }, []);
 
-    const logout = () => {
+    const logout = useCallback(() => {
         localStorage.removeItem('authToken');
         delete api.defaults.headers.common['Authorization'];
         setUser(null);
-    };
+    }, []);
 
-    const value = {
+    const value = useMemo(() => ({
         user,
         isAuthenticated: !!user,
         loading,
@@ -101,7 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         logout,
         setUser,
         setLoading,
-    };
+    }), [user, loading, login, logout]);
 
     return (
         <AuthContext.Provider value={value}>

@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { api } from '../services/api';
 
+import { createResourceURL } from '../context/createResourceURL';
 // Ícones e Componentes de UI
 const LogoutIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>;
 const Loader = () => <div className="border-slate-300 h-12 w-12 animate-spin rounded-full border-4 border-t-indigo-600" />;
@@ -12,7 +13,7 @@ const EditIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height
 
 // Tipos para os dados da API
 type Endereco = { rua: string; numero: string; cidade: string; estado: string; cep: string; };
-type ProfileUser = { id: string; name: string; email: string; createdAt: string; endereco?: Endereco; };
+type ProfileUser = { id: string; name: string; email: string; createdAt: string; endereco?: Endereco; avatar?: string; };
 type Pedido = { id: string; titulo: string; descricao: string; createdAt: string; };
 
 export const PerfilPage: React.FC = () => {
@@ -86,9 +87,14 @@ export const PerfilPage: React.FC = () => {
                 <div className="md:col-span-1">
                     <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 space-y-5">
                         <div className="flex items-center space-x-4">
-                            <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center font-bold text-3xl text-indigo-700">
-                                {profileUser.name.charAt(0)}
-                            </div>
+                            <img
+                                // ALTERADO: Constrói a URL completa do avatar.
+                                src={createResourceURL(profileUser.avatar)
+                                    || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileUser.name)}&background=e0e7ff&color=4338ca&size=128`
+                                }
+                                alt={`Avatar de ${profileUser.name}`}
+                                className="w-16 h-16 rounded-full object-cover bg-slate-200"
+                            />
                             <div>
                                 <h2 className="text-xl font-bold text-slate-800">{profileUser.name}</h2>
                                 {profileUser.endereco && <p className="text-sm text-slate-500">{`${profileUser.endereco.cidade}, ${profileUser.endereco.estado}`}</p>}

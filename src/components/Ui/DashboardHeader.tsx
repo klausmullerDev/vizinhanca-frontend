@@ -2,15 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import { useNotifications } from '../../context/NotificationsContext';
+import { type User, useAuth } from '../../context/AuthContext'; // Importando User e useAuth
 import { NotificationsList } from '../Notifications/NotificationsList';
+import { createResourceURL } from '../../context/createResourceURL';
 
-type User = { id: string; name: string | null; email: string; } | null;
-
-interface DashboardHeaderProps {
-    user: User;
-}
-
-export function DashboardHeader({ user }: DashboardHeaderProps) {
+export function DashboardHeader() {
+  const { user } = useAuth(); // Obtendo o usuário diretamente do contexto
   const navigate = useNavigate();
   const { unreadCount } = useNotifications();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -50,11 +47,19 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
               )}
             </button>
             <button
-              onClick={() => user && navigate(`/perfil/${user.id}`)}
-              className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center font-bold text-indigo-700 ring-2 ring-white cursor-pointer"
+              onClick={() => user && navigate(`/perfil/${user.id}`)}              
               aria-label="Acessar perfil"
+              className="w-10 h-10 rounded-full ring-2 ring-white cursor-pointer overflow-hidden bg-slate-200 flex items-center justify-center"
             >
-              {user?.name?.charAt(0)}
+              {user?.avatar ? (
+                <img 
+                  src={createResourceURL(user.avatar)}
+                  alt={`Avatar de ${user.name}`}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="font-bold text-indigo-700">{user?.name?.charAt(0)}</span>
+              )}
             </button>
           </div>
           {isNotificationsOpen && (

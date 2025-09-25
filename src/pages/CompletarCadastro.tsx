@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import { api } from '../services/api';
-
+import { useAuth } from '../context/AuthContext';
 import Input from '../components/Input';
 import Select from '../components/Select';
 import Button from '../components/Button';
@@ -16,6 +16,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 const CompletarCadastroPage: React.FC = () => {
 
   const navigate = useNavigate();
+  const { setUser } = useAuth();
 
   const [formData, setFormData] = useState({
     cpf: '',
@@ -66,27 +67,27 @@ const CompletarCadastroPage: React.FC = () => {
     setLoading(true);
     setNotification(null);
 
-    const profileData = {
-      cpf: formData.cpf.replace(/\D/g, ''),
-      telefone: formData.telefone.replace(/\D/g, ''),
-      dataDeNascimento: formData.dataDeNascimento ? new Date(formData.dataDeNascimento) : undefined,
-      sexo: formData.sexo,
-      endereco: {
-        rua: formData.rua,
-        numero: formData.numero,
-        bairro: formData.bairro,
-        cidade: formData.cidade,
-        estado: formData.estado,
-        cep: formData.cep.replace(/\D/g, ''),
-      }
-    };
+    // Usar FormData para alinhar com a documentação (multipart/form-data)
+    const data = new FormData();
+    data.append('cpf', formData.cpf.replace(/\D/g, ''));
+    data.append('telefone', formData.telefone.replace(/\D/g, ''));
+    if (formData.dataDeNascimento) data.append('dataDeNascimento', formData.dataDeNascimento);
+    if (formData.sexo) data.append('sexo', formData.sexo);
+
+    // Adiciona o endereço no formato esperado pelo backend (geralmente `endereco[campo]`)
+    data.append('endereco[rua]', formData.rua);
+    data.append('endereco[numero]', formData.numero);
+    data.append('endereco[bairro]', formData.bairro);
+    data.append('endereco[cidade]', formData.cidade);
+    data.append('endereco[estado]', formData.estado);
+    data.append('endereco[cep]', formData.cep.replace(/\D/g, ''));
 
     try {
-      console.log('Enviando dados para a API:', profileData);
-      await api.put('/users/profile', profileData);
+      const response = await api.put('/users/profile', data);
+      // Atualiza o usuário no contexto global
+      setUser(response.data);
       setNotification({ message: 'Perfil atualizado com sucesso! Redirecionando...', type: 'success' });
       setTimeout(() => navigate('/dashboard'), 1500);
-
     } catch (error: any) {
       const message = error.response?.data?.message || 'Não foi possível atualizar o perfil.';
       setNotification({ message, type: 'error' });

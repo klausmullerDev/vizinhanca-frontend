@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode, useCallback, useMemo } from 'react';
 import type { ApiNotification } from '../types/notification';
 import { notificationsService } from '../services/notifications';
 import { useAuth } from './AuthContext';
@@ -36,13 +36,13 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const markAsRead = async (id: string) => {
+  const markAsRead = useCallback(async (id: string) => {
     // Salva o estado original para um rollback seguro
     const originalNotifications = [...notifications];
     const originalCount = unreadCount;
 
     // Atualização otimista da UI
-    setNotifications(prev => 
+    setNotifications(prev =>
       prev.map(n => n.id === id ? { ...n, lida: true } : n)
     );
     setUnreadCount(prev => Math.max(0, prev - 1));
@@ -55,11 +55,11 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       setUnreadCount(originalCount);
       console.error('Erro ao marcar notificação como lida:', error);
     }
-  };
+  }, [notifications, unreadCount]);
 
-  const refetchNotifications = async () => {
+  const refetchNotifications = useCallback(async () => {
     await Promise.all([fetchNotifications(), fetchUnreadCount()]);
-  };
+  }, [fetchNotifications, fetchUnreadCount]);
 
   useEffect(() => {
     // Só busca notificações se o usuário estiver autenticado
@@ -78,15 +78,15 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     }
   }, [isAuthenticated, fetchNotifications, fetchUnreadCount, refetchNotifications]);
 
+  const value = useMemo(() => ({
+    notifications,
+    unreadCount,
+    markAsRead,
+    refetchNotifications
+  }), [notifications, unreadCount, markAsRead, refetchNotifications]);
+
   return (
-    <NotificationsContext.Provider 
-      value={{ 
-        notifications, 
-        unreadCount, 
-        markAsRead, 
-        refetchNotifications 
-      }}
-    >
+    <NotificationsContext.Provider value={value}>
       {children}
     </NotificationsContext.Provider>
   );

@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
-import { PedidoCard } from '../components/Pedidos/PedidoCard';
+import { PedidoCard } from '../components/Pedidos/PedidoCard'; // A importação já deve existir, apenas garantindo.
 import { DetalhesPedidoModal } from '../components/Pedidos/DetalhesPedidoModal';
 import { NovoPedidoModal } from '../components/Pedidos/NovoPedidoModal';
 import { EditarPedidoModal } from '../components/Pedidos/EditarPedidoModal';
@@ -15,7 +15,12 @@ import { FloatingActionButton } from '../components/Ui/FloatingActionButton';
 import { DashboardHeader } from '../components/Ui/DashboardHeader';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
-type Author = { id: string; name: string };
+type Author = {
+    id: string;
+    name: string;
+    avatar?: string;
+};
+
 type Pedido = {
     id: string;
     titulo: string;
@@ -126,7 +131,7 @@ export const Dashboard: React.FC = () => {
                     onClose={() => setNotification(null)} 
                 />
             </ErrorBoundary>
-            <DashboardHeader user={user} />
+            <DashboardHeader />
             <main className="py-8 px-4 max-w-2xl mx-auto">
                 {renderContent()}
             </main>
