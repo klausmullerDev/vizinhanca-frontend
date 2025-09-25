@@ -4,7 +4,7 @@ import { Bell } from 'lucide-react';
 import { useNotifications } from '../../context/NotificationsContext';
 import { type User, useAuth } from '../../context/AuthContext'; // Importando User e useAuth
 import { NotificationsList } from '../Notifications/NotificationsList';
-import { createResourceURL } from '../../context/createResourceURL';
+import { createResourceURL } from '@/utils/createResourceURL';
 
 export function DashboardHeader() {
   const { user } = useAuth(); // Obtendo o usuário diretamente do contexto

@@ -25,6 +25,7 @@ type Pedido = {
     id: string;
     titulo: string;
     descricao: string;
+    imagem?: string;
     createdAt: string;
     author: Author;
     currentUserHasInterest: boolean;

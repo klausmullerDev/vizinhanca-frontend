@@ -8,6 +8,7 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Loader } from '../components/Ui/Loader';
 import Notification from '../components/Notification';
+import { createResourceURL } from '@/utils/createResourceURL';
 
 type PedidoDetalhado = {
   id: string;
@@ -15,6 +16,7 @@ type PedidoDetalhado = {
   descricao: string;
   status: string;
   createdAt: string;
+  imagem?: string; // Adicionado campo para a imagem
   autor: {
     id: string;
     name: string;
@@ -96,6 +98,16 @@ export function DetalhesPedido() {
       <main className="py-8 px-4 max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Coluna principal */}
         <div className="md:col-span-2 bg-white border border-slate-200 rounded-lg shadow-sm p-6 md:p-8">
+          {/* Renderiza a imagem do pedido, se existir */}
+          {pedido.imagem && (
+            <div className="mb-6">
+              <img 
+                src={createResourceURL(pedido.imagem)} 
+                alt={`Imagem do pedido: ${pedido.titulo}`}
+                className="w-full h-auto max-h-96 object-contain rounded-lg bg-slate-100"
+              />
+            </div>
+          )}
           <h2 className="text-2xl font-bold text-slate-900 mb-4">Detalhes do Pedido</h2>
           <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">{pedido.descricao}</p>
         </div>

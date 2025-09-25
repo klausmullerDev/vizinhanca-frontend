@@ -1,11 +1,17 @@
 // pages/PerfilPage.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { api } from '../services/api';
 
-import { createResourceURL } from '../context/createResourceURL';
+import { createResourceURL } from '@/utils/createResourceURL';
+import { PedidoCard } from '../components/Pedidos/PedidoCard';
+import { DetalhesPedidoModal } from '../components/Pedidos/DetalhesPedidoModal';
+import { EditarPedidoModal } from '../components/Pedidos/EditarPedidoModal';
+import Notification from '../components/Notification';
+import { EmptyState } from '../components/Ui/EmptyState';
+
 // Ícones e Componentes de UI
 const LogoutIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>;
 const Loader = () => <div className="border-slate-300 h-12 w-12 animate-spin rounded-full border-4 border-t-indigo-600" />;
@@ -14,7 +20,16 @@ const EditIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height
 // Tipos para os dados da API
 type Endereco = { rua: string; numero: string; cidade: string; estado: string; cep: string; };
 type ProfileUser = { id: string; name: string; email: string; createdAt: string; endereco?: Endereco; avatar?: string; };
-type Pedido = { id: string; titulo: string; descricao: string; createdAt: string; };
+type Author = { id: string; name: string; avatar?: string; };
+type Pedido = {
+    id: string;
+    titulo: string;
+    descricao: string;
+    imagem?: string;
+    createdAt: string;
+    author: Author;
+    currentUserHasInterest: boolean;
+};
 
 export const PerfilPage: React.FC = () => {
     const { userId } = useParams<{ userId: string }>();
@@ -25,39 +40,72 @@ export const PerfilPage: React.FC = () => {
     const [pedidos, setPedidos] = useState<Pedido[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+    const [modalDetalhesAberto, setModalDetalhesAberto] = useState<Pedido | null>(null);
+    const [modalEdicaoAberto, setModalEdicaoAberto] = useState<Pedido | null>(null);
 
     const isMyProfile = loggedInUser && loggedInUser.id === userId;
 
-    useEffect(() => {
+    const fetchProfileData = useCallback(async () => {
         if (!userId) {
             setError("ID de usuário não encontrado.");
             setLoading(false);
             return;
         }
-
-        const fetchProfileData = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const [userResponse, pedidosResponse] = await Promise.all([
-                    api.get(`/users/${userId}`),
-                    api.get(`/users/${userId}/pedidos`)
-                ]);
-                setProfileUser(userResponse.data);
-                setPedidos(pedidosResponse.data);
-            } catch (err) {
-                setError('Não foi possível carregar o perfil. O usuário pode não existir.');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchProfileData();
+        
+        setLoading(true);
+        setError(null);
+        try {
+            const [userResponse, pedidosResponse] = await Promise.all([
+                api.get(`/users/${userId}`),
+                api.get(`/users/${userId}/pedidos`)
+            ]);
+            setProfileUser(userResponse.data);
+            setPedidos(pedidosResponse.data);
+        } catch (err) {
+            setError('Não foi possível carregar o perfil. O usuário pode não existir.');
+        } finally {
+            setLoading(false);
+        }
     }, [userId]);
+
+    useEffect(() => {
+        fetchProfileData();
+    }, [fetchProfileData]);
 
     const handleLogout = () => {
         logout();
         navigate('/login');
+    };
+
+    const onPedidoAtualizado = () => {
+        setModalEdicaoAberto(null);
+        setNotification({ message: 'Pedido atualizado com sucesso!', type: 'success' });
+        fetchProfileData();
+    };
+
+    const onPedidoDeletado = (pedidoId: string) => {
+        setPedidos(prevPedidos => prevPedidos.filter(p => p.id !== pedidoId));
+        setNotification({ message: 'Pedido apagado com sucesso.', type: 'success' });
+    };
+
+    const handleManifestarInteresse = async (pedidoId: string) => {
+        try {
+            await api.post(`/pedidos/${pedidoId}/interesse`);
+            setPedidos(pedidosAtuais =>
+                pedidosAtuais.map(p =>
+                    p.id === pedidoId ? { ...p, currentUserHasInterest: true } : p
+                )
+            );
+            if (modalDetalhesAberto && modalDetalhesAberto.id === pedidoId) {
+                setModalDetalhesAberto(prev => prev ? { ...prev, currentUserHasInterest: true } : null);
+            }
+            setNotification({ message: 'Interesse registrado! O morador foi notificado.', type: 'success' });
+        } catch (error: any) {
+            const message = error.response?.data?.message || 'Erro ao registrar interesse.';
+            setNotification({ message, type: 'error' });
+        }
     };
 
     if (loading) {
@@ -70,6 +118,10 @@ export const PerfilPage: React.FC = () => {
 
     return (
         <div className="bg-slate-50 min-h-screen font-sans">
+            <Notification 
+                notification={notification}
+                onClose={() => setNotification(null)}
+            />
             <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
                 <div className="max-w-4xl mx-auto flex justify-between items-center p-4">
                     <div>
@@ -120,28 +172,47 @@ export const PerfilPage: React.FC = () => {
 
                 {/* Coluna de Pedidos do Usuário */}
                 <div className="md:col-span-2">
-                    <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
-                        <h3 className="font-bold text-lg mb-4">Pedidos Criados por {profileUser.name.split(' ')[0]}</h3>
-                        <div className="space-y-4">
-                            {pedidos.length > 0 ? (
-                                pedidos.map(pedido => (
-                                    <div key={pedido.id} className="border-b border-slate-200 pb-4 last:border-b-0">
-                                        <Link to={`/pedidos/${pedido.id}`}>
-                                            <h4 className="font-semibold text-slate-800 hover:text-indigo-600">
-                                                {pedido.titulo}
-                                            </h4>
-                                        </Link>
-                                        <p className="text-sm text-slate-600 mt-1 line-clamp-2">{pedido.descricao}</p>
-                                        <p className="text-xs text-slate-400 mt-2">Criado em {new Date(pedido.createdAt).toLocaleDateString()}</p>
-                                    </div>
-                                ))
-                            ) : (
-                                <p className="text-slate-500 text-center py-8">Este usuário ainda não criou nenhum pedido.</p>
-                            )}
-                        </div>
+                    <h3 className="font-bold text-lg mb-4 px-1">Pedidos Criados por {profileUser.name.split(' ')[0]}</h3>
+                    <div className="space-y-6">
+                        {pedidos.length > 0 ? (
+                            pedidos.map(pedido => (
+                                <PedidoCard                                    
+                                    key={pedido.id}
+                                    // CORREÇÃO: Adiciona o objeto 'author' que está faltando,
+                                    // usando os dados do usuário do perfil.
+                                    pedido={{...pedido, author: { id: profileUser.id, name: profileUser.name, avatar: profileUser.avatar }}}
+                                    loggedInUser={loggedInUser}
+                                    onVerDetalhes={() => setModalDetalhesAberto(pedido)}
+                                    onEditar={() => setModalEdicaoAberto(pedido)}
+                                    onDeletar={onPedidoDeletado}
+                                />
+                            ))
+                        ) : (
+                            <div className="bg-white rounded-lg border-2 border-dashed border-slate-300 p-8">
+                                <p className="text-slate-500 text-center">Este usuário ainda não criou nenhum pedido.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>
+
+            {modalDetalhesAberto && (
+                <DetalhesPedidoModal
+                    pedido={modalDetalhesAberto}
+                    user={loggedInUser}
+                    onClose={() => setModalDetalhesAberto(null)}
+                    onManifestarInteresse={handleManifestarInteresse}
+                />
+            )}
+
+            {modalEdicaoAberto && (
+                <EditarPedidoModal
+                    pedido={modalEdicaoAberto}
+                    onClose={() => setModalEdicaoAberto(null)}
+                    onPedidoAtualizado={onPedidoAtualizado}
+                    setNotification={setNotification}
+                />
+            )}
         </div>
     );
 };

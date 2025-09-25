@@ -4,7 +4,7 @@ import { api } from '../services/api';
 import { useNavigate, Link } from 'react-router-dom';
 import Notification from '../components/Notification';
 import { Loader } from '../components/Ui/Loader';
-import { createResourceURL } from '../context/createResourceURL';
+import { createResourceURL } from '@/utils/createResourceURL';
 
 // Tipos
 type ProfileFormData = {

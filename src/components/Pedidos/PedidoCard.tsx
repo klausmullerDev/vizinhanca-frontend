@@ -5,7 +5,7 @@ import { formatDistanceToNow } from 'date-fns'; // Adicionado para formatação 
 import { ptBR } from 'date-fns/locale'; // Adicionado para localização em português
 import { MoreHorizontal, Edit, Trash2 } from 'lucide-react'; // Ícones para o menu de ações
 import type { User } from '../../context/AuthContext'; // Importando o tipo User
-import { createResourceURL } from '../../context/createResourceURL';
+import { createResourceURL } from '@/utils/createResourceURL';
 
 // Tipos (podem ser movidos para um arquivo types.ts)
 type Author = {
@@ -13,24 +13,7 @@ type Author = {
     name: string;
     avatar?: string; // Adicionado campo avatar
 };
-type Pedido = { id: string; titulo: string; descricao: string; createdAt: string; author: Author; currentUserHasInterest: boolean; };
-
-// Ícone
-const MoreVerticalIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1" /><circle cx="12" cy="5" r="1" /><circle cx="12" cy="19" r="1" /></svg>;
-
-// Função para formatar o tempo (pode ser movida para um arquivo utils)
-const formatTimeAgo = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  if (seconds < 60) return "agora mesmo";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `há ${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `há ${hours}h`;
-  const days = Math.floor(hours / 24);
-  return `há ${days}d`;
-};
+type Pedido = { id: string; titulo: string; descricao: string; imagem?: string; createdAt: string; author: Author; currentUserHasInterest: boolean; };
 
 interface CardPedidoProps {
   pedido: Pedido;
@@ -104,6 +87,17 @@ export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, on
                 </div>
             )}
         </div>
+
+        {/* Seção da Imagem do Pedido */}
+        {pedido.imagem && (
+            <div className="mt-4 -mx-5">
+                <img 
+                    src={createResourceURL(pedido.imagem)} 
+                    alt={`Imagem do pedido: ${pedido.titulo}`}
+                    className="w-full h-auto max-h-72 object-cover"
+                />
+            </div>
+        )}
 
         <div className="mt-4">
             <h3 className="text-lg font-bold text-slate-900">{pedido.titulo}</h3>
