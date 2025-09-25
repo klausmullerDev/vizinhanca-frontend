@@ -12,8 +12,8 @@ import Notification from '../components/Notification';
 import { Loader } from '../components/Ui/Loader';
 import { EmptyState } from '../components/Ui/EmptyState';
 import { FloatingActionButton } from '../components/Ui/FloatingActionButton';
-import { DashboardHeader } from '../components/Ui/DashboardHeader';
-import { ErrorBoundary } from '../components/ErrorBoundary';
+import { AppHeader } from '../components/Ui/AppHeader'; // Importando o novo cabeçalho
+import { NotificationsPanel } from '../components/Notifications/NotificationsPanel'; // Importando o novo painel
 
 type Author = {
     id: string;
@@ -38,6 +38,8 @@ export const Dashboard: React.FC = () => {
     const [pedidos, setPedidos] = useState<Pedido[]>([]);
     const [loading, setLoading] = useState(true);
     const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isNotificationsPanelOpen, setIsNotificationsPanelOpen] = useState(false);
 
 
     const [modalDetalhesAberto, setModalDetalhesAberto] = useState<Pedido | null>(null);
@@ -101,21 +103,30 @@ export const Dashboard: React.FC = () => {
         }
     };
 
+    // Filtra os pedidos com base no termo de busca
+    const filteredPedidos = pedidos.filter(pedido =>
+        pedido.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pedido.descricao.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     const renderContent = () => {
         if (loading) {
             return <div className="flex justify-center pt-20"><Loader /></div>;
         }
-        if (pedidos.length === 0) {
+        if (pedidos.length === 0 && searchTerm === '') {
             return <EmptyState />;
+        }
+        if (filteredPedidos.length === 0) {
+            return <p className="text-center text-slate-500 mt-10">Nenhum pedido encontrado para "{searchTerm}".</p>;
         }
         return (
             <div className="space-y-6">
-                {pedidos.map(pedido => (
+                {filteredPedidos.map(pedido => (
                     <PedidoCard
                         key={pedido.id}
                         pedido={pedido}
                         loggedInUser={user}
-                        onVerDetalhes={() => setModalDetalhesAberto(pedido)}
+                        onManifestarInteresse={handleManifestarInteresse}
                         onEditar={() => setModalEdicaoAberto(pedido)}
                         onDeletar={onPedidoDeletado}
                     />
@@ -126,17 +137,25 @@ export const Dashboard: React.FC = () => {
 
     return (
         <div className="bg-slate-50 min-h-screen font-sans">
-            <ErrorBoundary>
-                <Notification 
-                    notification={notification} 
-                    onClose={() => setNotification(null)} 
-                />
-            </ErrorBoundary>
-            <DashboardHeader />
-            <main className="py-8 px-4 max-w-2xl mx-auto">
+            <AppHeader 
+                user={user}
+                searchValue={searchTerm}
+                onSearchChange={(e) => setSearchTerm(e.target.value)}
+                onNotificationsClick={() => setIsNotificationsPanelOpen(true)}
+            />
+            <Notification 
+                notification={notification} 
+                onClose={() => setNotification(null)} 
+            />
+            <main className="py-8 pb-24 px-4 max-w-2xl mx-auto">
                 {renderContent()}
             </main>
             <FloatingActionButton onClick={() => setModalNovoPedidoAberto(true)} />
+
+            <NotificationsPanel 
+                isOpen={isNotificationsPanelOpen}
+                onClose={() => setIsNotificationsPanelOpen(false)}
+            />
 
             {modalDetalhesAberto && (
                 <DetalhesPedidoModal

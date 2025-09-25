@@ -1,17 +1,28 @@
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Bell, CheckCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useNotifications } from '../../context/NotificationsContext';
+import { useNavigate, Link } from 'react-router-dom';
+import { useNotifications, type ApiNotification } from '../../context/NotificationsContext';
+import { createResourceURL } from '@/utils/createResourceURL';
 
-export function NotificationsList() {
+interface NotificationsListProps {
+  onClose: () => void;
+}
+
+export function NotificationsList({ onClose }: NotificationsListProps) {
   const { notifications, markAsRead } = useNotifications();
   const navigate = useNavigate();
 
-  const handleNotificationClick = (notificationId: string, pedidoId: string) => {
-    // Navigate to the order details page
+  const handleNotificationClick = (notificationId: string, pedidoId: string | undefined) => {
+    // Se não houver um pedido associado, apenas marca como lida e não fecha o painel.
+    if (!pedidoId) {
+      markAsRead(notificationId);
+      return;
+    }
+    // Navega para a página do pedido e fecha o painel.
+    // A notificação só será marcada como lida se o usuário clicar no botão específico.
     navigate(`/pedidos/${pedidoId}`);
-    markAsRead(notificationId);
+    onClose();
   };
 
   return (
@@ -22,20 +33,32 @@ export function NotificationsList() {
           <p className="text-center">Nenhuma notificação no momento</p>
         </div>
       ) : (
-        <div className="divide-y divide-gray-100">
-          {notifications.map((notification) => (
-            <div 
-              key={notification.id}
+        <div className="divide-y divide-slate-100">
+          {notifications.map((notification: ApiNotification) => (
+            <div
+              key={notification.id} // A key deve estar no elemento mais externo do map
               className={`p-4 transition-colors ${
                 notification.lida ? 'bg-white' : 'bg-blue-50/60'
-              } ${notification.pedidoId ? 'cursor-pointer hover:bg-gray-50' : ''}`}
-              onClick={() => 
-                notification.pedidoId && 
-                handleNotificationClick(notification.id, notification.pedidoId)
-              }
+              } ${notification.pedidoId ? 'cursor-pointer hover:bg-slate-50' : ''}`}
+              onClick={() => handleNotificationClick(notification.id, notification.pedidoId)}
             >
               <div className="flex gap-3 items-start">
-                <div className="flex-1">
+                {/* 3. Adicionar o avatar do remetente */}
+                {notification.remetente ? (
+                  <Link to={`/perfil/${notification.remetente.id}`} onClick={(e) => e.stopPropagation()}>
+                    <img
+                      src={createResourceURL(notification.remetente.avatar) || `https://ui-avatars.com/api/?name=${encodeURIComponent(notification.remetente.name)}&background=e0e7ff&color=4338ca&size=96`}
+                      alt={`Avatar de ${notification.remetente.name}`}
+                      className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                    />
+                  </Link>
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
+                    <Bell className="w-5 h-5 text-slate-500" />
+                  </div>
+                )}
+
+                <div className="flex-1 min-w-0">
                   <p className="text-sm text-gray-900 mb-1">{notification.mensagem}</p>
                   <div className="flex justify-between items-center">
                     <span className="text-xs text-gray-500">
@@ -49,6 +72,7 @@ export function NotificationsList() {
                           e.stopPropagation(); // Prevent container's onClick
                           markAsRead(notification.id);
                         }}
+                        aria-label="Marcar notificação como lida"
                         className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
                       >
                         <CheckCircle className="w-4 h-4" />
@@ -58,12 +82,6 @@ export function NotificationsList() {
                   </div>
                 </div>
               </div>
-              {notification.pedido && (
-                <div className="mt-2 p-2 bg-gray-50 rounded-md text-xs text-gray-600">
-                  <p className="font-medium">{notification.pedido.titulo}</p>
-                  <p className="line-clamp-2">{notification.pedido.descricao}</p>
-                </div>
-              )}
             </div>
           ))}
         </div>

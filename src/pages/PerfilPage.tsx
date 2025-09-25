@@ -8,7 +8,6 @@ import { LogOut, Edit } from 'lucide-react';
 
 import { createResourceURL } from '@/utils/createResourceURL';
 import { PedidoCard } from '../components/Pedidos/PedidoCard';
-import { DetalhesPedidoModal } from '../components/Pedidos/DetalhesPedidoModal';
 import { EditarPedidoModal } from '../components/Pedidos/EditarPedidoModal';
 import Notification from '../components/Notification';
 import { Loader } from '../components/Ui/Loader';
@@ -47,7 +46,6 @@ export const PerfilPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-    const [modalDetalhesAberto, setModalDetalhesAberto] = useState<PedidoDoPerfil & { author: { id: string, name: string } } | null>(null);
     const [modalEdicaoAberto, setModalEdicaoAberto] = useState<PedidoParaEdicao | null>(null);
 
     const isMyProfile = loggedInUser && loggedInUser.id === userId;
@@ -103,13 +101,6 @@ export const PerfilPage: React.FC = () => {
                     p.id === pedidoId ? { ...p, usuarioJaDemonstrouInteresse: true } : p
                 )
             );
-            if (modalDetalhesAberto && modalDetalhesAberto.id === pedidoId) {
-                setModalDetalhesAberto(prev => {
-                    if (!prev) return null;
-                    // Recria o objeto completo para o modal
-                    return { ...prev, usuarioJaDemonstrouInteresse: true };
-                });
-            }
             setNotification({ message: 'Interesse registrado! O morador foi notificado.', type: 'success' });
         } catch (error: any) {
             const message = error.response?.data?.message || 'Erro ao registrar interesse.';
@@ -197,8 +188,7 @@ export const PerfilPage: React.FC = () => {
                                         }
                                     }}
                                     loggedInUser={loggedInUser}
-                                    // Constrói o objeto completo para o modal de detalhes
-                                    onVerDetalhes={() => setModalDetalhesAberto({ ...pedido, author: { id: profileUser.id, name: profileUser.name } })}
+                                    onManifestarInteresse={handleManifestarInteresse}
                                     onEditar={() => setModalEdicaoAberto(pedido)}
                                     onDeletar={onPedidoDeletado}
                                 />
@@ -211,15 +201,6 @@ export const PerfilPage: React.FC = () => {
                     </div>
                 </div>
             </main>
-
-            {modalDetalhesAberto && (
-                <DetalhesPedidoModal
-                    pedido={modalDetalhesAberto} // O tipo já está correto
-                    user={loggedInUser}
-                    onClose={() => setModalDetalhesAberto(null)}
-                    onManifestarInteresse={handleManifestarInteresse}
-                />
-            )}
 
             {modalEdicaoAberto && (
                 <EditarPedidoModal

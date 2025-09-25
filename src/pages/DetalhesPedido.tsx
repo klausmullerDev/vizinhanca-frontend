@@ -17,7 +17,7 @@ type PedidoDetalhado = {
   status: string;
   createdAt: string;
   imagem?: string; // Adicionado campo para a imagem
-  autor: {
+  author: { // Corrigido de 'autor' para 'author'
     id: string;
     name: string;
   };
@@ -65,7 +65,7 @@ export function DetalhesPedido() {
     }
   };
 
-  const isMyPedido = user?.id === pedido?.autor.id;
+  const isMyPedido = user?.id === pedido?.author.id;
 
   if (loading) {
     return <div className="flex justify-center items-center h-screen"><Loader /></div>;
@@ -137,8 +137,8 @@ export function DetalhesPedido() {
                 <User className="w-5 h-5 text-slate-400" />
                 <div>
                   <span className="text-sm text-slate-500">Pedido por</span>
-                  <Link to={`/perfil/${pedido.autor.id}`} className="block font-semibold text-slate-800 hover:text-indigo-600">
-                    {pedido.autor.name}
+                  <Link to={`/perfil/${pedido.author.id}`} className="block font-semibold text-slate-800 hover:text-indigo-600">
+                    {pedido.author.name}
                   </Link>
                 </div>
               </div>

@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { api } from '../../services/api';
+import { Link, useNavigate } from 'react-router-dom';
+import { api } from '../../services/api'; // Importando api
 import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { ptBR } from 'date-fns/locale'; // Adicionado para localização em português
+import { MoreHorizontal, Edit, Trash2, Check } from 'lucide-react';
 import type { User } from '../../context/AuthContext';
 import { createResourceURL } from '@/utils/createResourceURL';
 
@@ -26,14 +26,15 @@ type Pedido = {
 interface CardPedidoProps {
   pedido: Pedido;
   loggedInUser: User | null;
-  onVerDetalhes: () => void;
+  onManifestarInteresse: (pedidoId: string) => void;
   onEditar: () => void;
   onDeletar: (pedidoId: string) => void;
 }
 
-export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, onVerDetalhes, onEditar, onDeletar }) => {
+export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, onManifestarInteresse, onEditar, onDeletar }) => {
   const [menuAberto, setMenuAberto] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   const isMyPedido = loggedInUser?.id === pedido.author.id;
 
   // Hook para fechar o menu ao clicar fora
@@ -67,7 +68,8 @@ export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, on
     || `https://ui-avatars.com/api/?name=${encodeURIComponent(pedido.author.name)}&background=e0e7ff&color=4338ca&size=128`;
 
   return (
-    <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-5 transition-shadow hover:shadow-md">
+    // ESTILO ATUALIZADO: Removida a borda e o shadow, usando um espaçamento (mb-4) para separar os cards.
+    <div className="bg-white rounded-lg overflow-hidden border border-slate-200/80 p-4">
         <div className="flex justify-between items-start">
             <div className="flex items-center space-x-3">
                 <Link to={`/perfil/${pedido.author.id}`}>
@@ -99,24 +101,35 @@ export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, on
 
         {/* Seção da Imagem do Pedido */}
         {pedido.imagem && (
-            <div className="mt-4 -mx-5">
+            <div className="mt-4 -mx-4 bg-slate-100">
                 <img 
                     src={createResourceURL(pedido.imagem)} 
                     alt={`Imagem do pedido: ${pedido.titulo}`}
-                    className="w-full h-auto max-h-72 object-cover"
+                    className="w-full h-auto max-h-[400px] object-cover"
                 />
             </div>
         )}
 
         <div className="mt-4">
-            <h3 className="text-lg font-bold text-slate-900">{pedido.titulo}</h3>
+            <h3 className="text-lg font-semibold text-slate-800">{pedido.titulo}</h3>
             <p className="mt-1 text-slate-600 line-clamp-3">{pedido.descricao}</p>
         </div>
 
         <div className="mt-4 pt-4 border-t border-slate-200">
-            <button onClick={onVerDetalhes} className="w-full bg-indigo-50 text-indigo-700 font-bold py-2 px-4 rounded-lg hover:bg-indigo-100 transition-colors">
-                Ver Detalhes e Ajudar
-            </button>
+            {isMyPedido ? (
+                <button disabled className="w-full bg-slate-100 text-slate-500 font-bold py-2 px-4 rounded-lg cursor-not-allowed">
+                    Este é o seu pedido
+                </button>
+            ) : pedido.usuarioJaDemonstrouInteresse ? (
+                <button disabled className="w-full bg-green-100 text-green-700 font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2">
+                    <Check className="w-5 h-5" />
+                    Interesse Enviado!
+                </button>
+            ) : (
+                <button onClick={() => onManifestarInteresse(pedido.id)} className="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors">
+                    Eu quero ajudar!
+                </button>
+            )}
         </div>
     </div>
   );

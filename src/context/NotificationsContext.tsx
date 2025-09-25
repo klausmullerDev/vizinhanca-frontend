@@ -1,7 +1,15 @@
 import { createContext, useContext, useState, useEffect, type ReactNode, useCallback, useMemo } from 'react';
-import type { ApiNotification } from '../types/notification';
 import { notificationsService } from '../services/notifications';
 import { useAuth } from './AuthContext';
+
+// Adicionando os tipos diretamente aqui para refletir a nova estrutura da API
+type Remetente = {
+  id: string;
+  name: string;
+  avatar?: string;
+};
+
+export type ApiNotification = { id: string; mensagem: string; lida: boolean; createdAt: string; pedidoId?: string; remetente?: Remetente; };
 
 interface NotificationsContextData {
   notifications: ApiNotification[];
