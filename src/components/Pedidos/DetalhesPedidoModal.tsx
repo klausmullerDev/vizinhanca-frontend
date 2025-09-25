@@ -9,7 +9,7 @@ type Pedido = {
     descricao: string;
     createdAt: string;
     author: Author;
-    currentUserHasInterest: boolean; // << CAMPO ADICIONADO
+    usuarioJaDemonstrouInteresse: boolean;
 };
 type User = { id: string; name: string | null; email: string; } | null;
 
@@ -44,7 +44,7 @@ export const DetalhesPedidoModal: React.FC<DetalhesPedidoModalProps> = ({ pedido
                                 <button disabled className="w-full bg-slate-200 text-slate-500 font-bold py-3 rounded-lg cursor-not-allowed">Este é o seu pedido</button>
                             ) :
                                 // 3. ATUALIZE A CONDIÇÃO DO BOTÃO
-                                pedido.currentUserHasInterest ? (
+                                pedido.usuarioJaDemonstrouInteresse ? (
                                     <button disabled className="w-full bg-green-600 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
                                         Interesse Enviado!

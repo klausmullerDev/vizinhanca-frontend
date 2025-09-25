@@ -28,7 +28,7 @@ type Pedido = {
     imagem?: string;
     createdAt: string;
     author: Author;
-    currentUserHasInterest: boolean;
+    usuarioJaDemonstrouInteresse: boolean;
 };
 
 export const Dashboard: React.FC = () => {
@@ -83,14 +83,14 @@ export const Dashboard: React.FC = () => {
 
             setPedidos(pedidosAtuais =>
                 pedidosAtuais.map(p =>
-                    p.id === pedidoId ? { ...p, currentUserHasInterest: true } : p
+                    p.id === pedidoId ? { ...p, usuarioJaDemonstrouInteresse: true } : p
                 )
             );
 
             if (modalDetalhesAberto && modalDetalhesAberto.id === pedidoId) {
                 setModalDetalhesAberto(prevModalData => ({
                     ...prevModalData!,
-                    currentUserHasInterest: true
+                    usuarioJaDemonstrouInteresse: true
                 }));
             }
 

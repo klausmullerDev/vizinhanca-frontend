@@ -21,7 +21,7 @@ type PedidoDetalhado = {
     id: string;
     name: string;
   };
-  currentUserHasInterest: boolean;
+  usuarioJaDemonstrouInteresse: boolean;
 };
 
 export function DetalhesPedido() {
@@ -57,7 +57,7 @@ export function DetalhesPedido() {
     if (!pedido) return;
     try {
       await api.post(`/pedidos/${pedido.id}/interesse`);
-      setPedido(p => p ? { ...p, currentUserHasInterest: true } : null);
+      setPedido(p => p ? { ...p, usuarioJaDemonstrouInteresse: true } : null);
       setNotification({ message: 'Interesse registrado! O morador foi notificado.', type: 'success' });
     } catch (error: any) {
       const message = error.response?.data?.message || 'Erro ao registrar interesse.';
@@ -118,7 +118,7 @@ export function DetalhesPedido() {
             <h3 className="text-lg font-semibold text-slate-800 mb-4">Ação</h3>
             {isMyPedido ? (
               <button disabled className="w-full bg-slate-200 text-slate-500 font-bold py-3 rounded-lg cursor-not-allowed">Este é o seu pedido</button>
-            ) : pedido.currentUserHasInterest ? (
+            ) : pedido.usuarioJaDemonstrouInteresse ? (
               <button disabled className="w-full bg-green-600 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2">
                 <Check className="w-5 h-5" />
                 Interesse Enviado!

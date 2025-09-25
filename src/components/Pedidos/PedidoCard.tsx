@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react'; // Adicionado useState, useRef, useEffect
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
-import { formatDistanceToNow } from 'date-fns'; // Adicionado para formatação de data
-import { ptBR } from 'date-fns/locale'; // Adicionado para localização em português
-import { MoreHorizontal, Edit, Trash2 } from 'lucide-react'; // Ícones para o menu de ações
-import type { User } from '../../context/AuthContext'; // Importando o tipo User
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import type { User } from '../../context/AuthContext';
 import { createResourceURL } from '@/utils/createResourceURL';
 
 // Tipos (podem ser movidos para um arquivo types.ts)
@@ -13,7 +13,15 @@ type Author = {
     name: string;
     avatar?: string; // Adicionado campo avatar
 };
-type Pedido = { id: string; titulo: string; descricao: string; imagem?: string; createdAt: string; author: Author; currentUserHasInterest: boolean; };
+type Pedido = { 
+    id: string;
+    titulo: string;
+    descricao: string;
+    imagem?: string;
+    createdAt: string;
+    author: Author;
+    usuarioJaDemonstrouInteresse: boolean;
+};
 
 interface CardPedidoProps {
   pedido: Pedido;
@@ -26,7 +34,6 @@ interface CardPedidoProps {
 export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, onVerDetalhes, onEditar, onDeletar }) => {
   const [menuAberto, setMenuAberto] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
   const isMyPedido = loggedInUser?.id === pedido.author.id;
 
   // Hook para fechar o menu ao clicar fora
@@ -63,13 +70,15 @@ export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, on
     <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-5 transition-shadow hover:shadow-md">
         <div className="flex justify-between items-start">
             <div className="flex items-center space-x-3">
-                <img 
-                    src={avatarSrc} 
-                    alt={`Avatar de ${pedido.author.name}`}
-                    className="w-10 h-10 rounded-full object-cover bg-slate-200"
-                />
+                <Link to={`/perfil/${pedido.author.id}`}>
+                    <img 
+                        src={avatarSrc} 
+                        alt={`Avatar de ${pedido.author.name}`}
+                        className="w-10 h-10 rounded-full object-cover bg-slate-200 hover:ring-2 hover:ring-indigo-300 transition-all"
+                    />
+                </Link>
                 <div>
-                    <p className="font-semibold text-slate-800">{pedido.author.name}</p>
+                    <Link to={`/perfil/${pedido.author.id}`} className="font-semibold text-slate-800 hover:underline">{pedido.author.name}</Link>
                     <p className="text-xs text-slate-500">
                         {formatDistanceToNow(new Date(pedido.createdAt), { addSuffix: true, locale: ptBR })}
                     </p>
@@ -77,12 +86,12 @@ export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, on
             </div>
             {isMyPedido && (
                  <div className="relative group">
-                        <button onClick={() => setMenuAberto(!menuAberto)} className="p-2 rounded-full hover:bg-slate-100">
+                    <button onClick={() => setMenuAberto(!menuAberto)} className="p-2 rounded-full hover:bg-slate-100" aria-label="Opções do pedido">
                         <MoreHorizontal className="w-5 h-5 text-slate-500" />
                     </button>
-                        <div ref={menuRef} className={`absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg border border-slate-200 transition-opacity z-10 ${menuAberto ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                            <button onClick={() => { onEditar(); setMenuAberto(false); }} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><Edit className="w-4 h-4" /> Editar</button>
-                            <button onClick={handleDelete} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"><Trash2 className="w-4 h-4" /> Apagar</button>
+                    <div ref={menuRef} className={`absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg border border-slate-200 transition-all z-10 ${menuAberto ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
+                        <button onClick={() => { onEditar(); setMenuAberto(false); }} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><Edit className="w-4 h-4" /> Editar</button>
+                        <button onClick={handleDelete} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"><Trash2 className="w-4 h-4" /> Apagar</button>
                     </div>
                 </div>
             )}
