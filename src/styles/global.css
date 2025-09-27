@@ -7,6 +7,20 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.interessado-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid white; 
+  transition: transform 0.2s ease-in-out;
+  background-color: #e2e8f0; 
+}
+
+.interessado-avatar:hover {
+  transform: scale(1.15);
+  z-index: 10;
+}
 
 
 

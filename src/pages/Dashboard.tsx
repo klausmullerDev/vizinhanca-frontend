@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
-import { PedidoCard } from '../components/Pedidos/PedidoCard'; // A importação já deve existir, apenas garantindo.
+import { PedidoCard } from '../components/Pedidos/PedidoCard';
 import { DetalhesPedidoModal } from '../components/Pedidos/DetalhesPedidoModal';
 import { NovoPedidoModal } from '../components/Pedidos/NovoPedidoModal';
 import { EditarPedidoModal } from '../components/Pedidos/EditarPedidoModal';
@@ -12,13 +12,21 @@ import Notification from '../components/Notification';
 import { Loader } from '../components/Ui/Loader';
 import { EmptyState } from '../components/Ui/EmptyState';
 import { FloatingActionButton } from '../components/Ui/FloatingActionButton';
-import { AppHeader } from '../components/Ui/AppHeader'; // Importando o novo cabeçalho
-import { NotificationsPanel } from '../components/Notifications/NotificationsPanel'; // Importando o novo painel
+import { AppHeader } from '../components/Ui/AppHeader';
+import { NotificationsPanel } from '../components/Notifications/NotificationsPanel';
 
 type Author = {
     id: string;
     name: string;
     avatar?: string;
+};
+
+type Interesse = {
+    user: {
+        id: string;
+        name: string;
+        avatar?: string;
+    }
 };
 
 type Pedido = {
@@ -29,6 +37,8 @@ type Pedido = {
     createdAt: string;
     author: Author;
     usuarioJaDemonstrouInteresse: boolean;
+    interesses: Interesse[];
+    interessesCount: number;
 };
 
 export const Dashboard: React.FC = () => {
@@ -41,13 +51,12 @@ export const Dashboard: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isNotificationsPanelOpen, setIsNotificationsPanelOpen] = useState(false);
 
-
     const [modalDetalhesAberto, setModalDetalhesAberto] = useState<Pedido | null>(null);
     const [modalNovoPedidoAberto, setModalNovoPedidoAberto] = useState(false);
     const [modalEdicaoAberto, setModalEdicaoAberto] = useState<Pedido | null>(null);
 
     const fetchPedidos = async () => {
-        setLoading(true);
+        if (!loading) setLoading(true);
         try {
             const response = await api.get('/pedidos');
             setPedidos(response.data);
@@ -62,16 +71,16 @@ export const Dashboard: React.FC = () => {
         fetchPedidos();
     }, []);
 
-    const onPedidoCriado = () => {
+    const onPedidoCriado = (novoPedido: Pedido) => {
         setModalNovoPedidoAberto(false);
+        setPedidos(prevPedidos => [novoPedido, ...prevPedidos]);
         setNotification({ message: 'Seu pedido foi publicado com sucesso!', type: 'success' });
-        fetchPedidos();
     };
 
-    const onPedidoAtualizado = () => {
+    const onPedidoAtualizado = (pedidoAtualizado: Pedido) => {
         setModalEdicaoAberto(null);
+        setPedidos(prev => prev.map(p => p.id === pedidoAtualizado.id ? pedidoAtualizado : p));
         setNotification({ message: 'Pedido atualizado com sucesso!', type: 'success' });
-        fetchPedidos();
     };
 
     const onPedidoDeletado = (pedidoId: string) => {
@@ -80,30 +89,43 @@ export const Dashboard: React.FC = () => {
     };
 
     const handleManifestarInteresse = async (pedidoId: string) => {
+        if (!user) {
+            setNotification({ message: 'Você precisa estar logado para interagir.', type: 'error' });
+            return;
+        }
+
+        const pedidosOriginais = [...pedidos];
+
+        const novosPedidos = pedidos.map(p => {
+            if (p.id === pedidoId) {
+                const novoInteresse: Interesse = {
+                    user: {
+                        id: user.id,
+                        name: user.name,
+                        avatar: user.avatar || undefined, 
+                    },
+                };
+
+                return {
+                    ...p,
+                    usuarioJaDemonstrouInteresse: true,
+                    interessesCount: p.interessesCount + 1,
+                    interesses: [...p.interesses, novoInteresse],
+                };
+            }
+            return p;
+        });
+        setPedidos(novosPedidos);
+
         try {
             await api.post(`/pedidos/${pedidoId}/interesse`);
-
-            setPedidos(pedidosAtuais =>
-                pedidosAtuais.map(p =>
-                    p.id === pedidoId ? { ...p, usuarioJaDemonstrouInteresse: true } : p
-                )
-            );
-
-            if (modalDetalhesAberto && modalDetalhesAberto.id === pedidoId) {
-                setModalDetalhesAberto(prevModalData => ({
-                    ...prevModalData!,
-                    usuarioJaDemonstrouInteresse: true
-                }));
-            }
-
-            setNotification({ message: 'Interesse registrado! O morador foi notificado.', type: 'success' });
         } catch (error: any) {
+            setPedidos(pedidosOriginais);
             const message = error.response?.data?.message || 'Erro ao registrar interesse.';
             setNotification({ message, type: 'error' });
         }
     };
-
-    // Filtra os pedidos com base no termo de busca
+    
     const filteredPedidos = pedidos.filter(pedido =>
         pedido.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
         pedido.descricao.toLowerCase().includes(searchTerm.toLowerCase())
@@ -114,7 +136,7 @@ export const Dashboard: React.FC = () => {
             return <div className="flex justify-center pt-20"><Loader /></div>;
         }
         if (pedidos.length === 0 && searchTerm === '') {
-            return <EmptyState />;
+            return <EmptyState onCriarPedido={() => setModalNovoPedidoAberto(true)} />;
         }
         if (filteredPedidos.length === 0) {
             return <p className="text-center text-slate-500 mt-10">Nenhum pedido encontrado para "{searchTerm}".</p>;
@@ -159,9 +181,8 @@ export const Dashboard: React.FC = () => {
 
             {modalDetalhesAberto && (
                 <DetalhesPedidoModal
-                    pedido={modalDetalhesAberto}
+                    pedidoId={modalDetalhesAberto.id}
                     user={user}
-                    // A prop myInterests foi removida
                     onClose={() => setModalDetalhesAberto(null)}
                     onManifestarInteresse={handleManifestarInteresse}
                 />
@@ -171,7 +192,6 @@ export const Dashboard: React.FC = () => {
                     isOpen={modalNovoPedidoAberto}
                     onClose={() => setModalNovoPedidoAberto(false)}
                     onPedidoCriado={onPedidoCriado}
-                    setNotification={setNotification}
                 />
             )}
             {modalEdicaoAberto && (
@@ -179,7 +199,6 @@ export const Dashboard: React.FC = () => {
                     pedido={modalEdicaoAberto}
                     onClose={() => setModalEdicaoAberto(null)}
                     onPedidoAtualizado={onPedidoAtualizado}
-                    setNotification={setNotification}
                 />
             )}
         </div>

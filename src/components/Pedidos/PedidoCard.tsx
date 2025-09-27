@@ -1,19 +1,29 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { api } from '../../services/api'; // Importando api
+import { Link } from 'react-router-dom';
+import { api } from '../../services/api';
 import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale'; // Adicionado para localização em português
+import { ptBR } from 'date-fns/locale';
 import { MoreHorizontal, Edit, Trash2, Check } from 'lucide-react';
 import type { User } from '../../context/AuthContext';
 import { createResourceURL } from '@/utils/createResourceURL';
+import { InterestedUsersStack } from '../InterestedUsersStack';
 
-// Tipos (podem ser movidos para um arquivo types.ts)
+
 type Author = {
     id: string;
     name: string;
-    avatar?: string; // Adicionado campo avatar
+    avatar?: string;
 };
-type Pedido = { 
+
+type Interesse = {
+    user: {
+        id: string;
+        name: string;
+        avatar?: string;
+    }
+};
+
+type Pedido = {
     id: string;
     titulo: string;
     descricao: string;
@@ -21,6 +31,8 @@ type Pedido = {
     createdAt: string;
     author: Author;
     usuarioJaDemonstrouInteresse: boolean;
+    interesses: Interesse[]; 
+    interessesCount: number; 
 };
 
 interface CardPedidoProps {
@@ -34,21 +46,16 @@ interface CardPedidoProps {
 export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, onManifestarInteresse, onEditar, onDeletar }) => {
   const [menuAberto, setMenuAberto] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
   const isMyPedido = loggedInUser?.id === pedido.author.id;
 
-  // Hook para fechar o menu ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setMenuAberto(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [menuRef]);
 
   const handleDelete = async () => {
@@ -56,19 +63,17 @@ export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, on
     if (window.confirm('Tem certeza que deseja apagar este pedido?')) {
       try {
         await api.delete(`/pedidos/${pedido.id}`);
-        onDeletar(pedido.id); // Notifica o pai para remover da lista
+        onDeletar(pedido.id);
       } catch (error) {
         alert('Não foi possível apagar o pedido.');
       }
     }
   };
 
-  // Constrói a URL completa do avatar ou usa um fallback
   const avatarSrc = createResourceURL(pedido.author.avatar)
     || `https://ui-avatars.com/api/?name=${encodeURIComponent(pedido.author.name)}&background=e0e7ff&color=4338ca&size=128`;
 
   return (
-    // ESTILO ATUALIZADO: Removida a borda e o shadow, usando um espaçamento (mb-4) para separar os cards.
     <div className="bg-white rounded-lg overflow-hidden border border-slate-200/80 p-4">
         <div className="flex justify-between items-start">
             <div className="flex items-center space-x-3">
@@ -99,7 +104,6 @@ export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, on
             )}
         </div>
 
-        {/* Seção da Imagem do Pedido */}
         {pedido.imagem && (
             <div className="mt-4 -mx-4 bg-slate-100">
                 <img 
@@ -114,6 +118,15 @@ export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, on
             <h3 className="text-lg font-semibold text-slate-800">{pedido.titulo}</h3>
             <p className="mt-1 text-slate-600 line-clamp-3">{pedido.descricao}</p>
         </div>
+
+        {pedido.interessesCount > 0 && (
+            <div className="mt-4 pt-4 border-t border-slate-200">
+                <InterestedUsersStack
+                    interesses={pedido.interesses}
+                    totalCount={pedido.interessesCount}
+                />
+            </div>
+        )}
 
         <div className="mt-4 pt-4 border-t border-slate-200">
             {isMyPedido ? (
