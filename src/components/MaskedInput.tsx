@@ -2,27 +2,29 @@ import React from 'react';
 import { IMaskInput } from 'react-imask';
 
 interface MaskedInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-    label: string;
+    label?: string;
     id: string;
     mask: string;
-
-    onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-const MaskedInput: React.FC<MaskedInputProps> = ({ label, id, name, mask, value, onChange, ...props }) => {
+const MaskedInput = React.forwardRef<HTMLInputElement, MaskedInputProps>(
+  ({ label, id, name, mask, value, onChange, ...props }, ref) => {
     return (
         <div>
-            <label htmlFor={id} className="block text-sm font-medium text-gray-700">
-                {label}
-            </label>
+            {label && (
+                <label htmlFor={id} className="block text-sm font-medium text-gray-700">
+                    {label}
+                </label>
+            )}
             <IMaskInput
                 mask={mask}
                 value={value as string}
                 id={id}
                 name={name || id}
-
-
+                inputRef={ref as any} // Passa a ref para o input interno do iMask
                 onAccept={(acceptedValue) => {
+                    if (!onChange) return;
                     const event = {
                         target: {
                             id: id,
@@ -37,6 +39,6 @@ const MaskedInput: React.FC<MaskedInputProps> = ({ label, id, name, mask, value,
             />
         </div>
     );
-};
+});
 
 export default MaskedInput;

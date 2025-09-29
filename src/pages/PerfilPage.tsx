@@ -15,24 +15,25 @@ import { Loader } from '../components/Ui/Loader';
 // Tipos para os dados da API
 type Endereco = { rua: string; numero: string; cidade: string; estado: string; cep: string; };
 type ProfileUser = { id: string; name: string; email: string; createdAt: string; endereco?: Endereco; avatar?: string; };
+type Interesse = {
+    user: {
+        id: string;
+        name: string;
+        avatar?: string;
+    }
+};
 
-// Este tipo reflete o que a API /users/:userId/pedidos provavelmente retorna (sem o autor)
-type PedidoDoPerfil = {
+// Tipo completo para o Pedido, alinhado com outros componentes
+type Pedido = {
     id: string;
     titulo: string;
     descricao: string;
     imagem?: string;
     createdAt: string;
+    author: { id: string; name: string; avatar?: string; };
     usuarioJaDemonstrouInteresse: boolean;
-};
-
-// O modal de edição não precisa de todos os campos, apenas os essenciais para o formulário.
-// Este tipo representa o que o EditarPedidoModal realmente precisa.
-type PedidoParaEdicao = {
-    id: string;
-    titulo: string;
-    descricao: string;
-    imagem?: string;
+    interesses: Interesse[];
+    interessesCount: number;
 };
 
 export const PerfilPage: React.FC = () => {
@@ -40,13 +41,13 @@ export const PerfilPage: React.FC = () => {
     const { user: loggedInUser, logout } = useAuth();
     const navigate = useNavigate();
 
-    const [profileUser, setProfileUser] = useState<ProfileUser | null>(null);
-    const [pedidos, setPedidos] = useState<PedidoDoPerfil[]>([]);
+    const [profileUser, setProfileUser] = useState<ProfileUser | null>(null); 
+    const [pedidos, setPedidos] = useState<Pedido[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-    const [modalEdicaoAberto, setModalEdicaoAberto] = useState<PedidoParaEdicao | null>(null);
+    const [modalEdicaoAberto, setModalEdicaoAberto] = useState<Pedido | null>(null);
 
     const isMyProfile = loggedInUser && loggedInUser.id === userId;
 
@@ -82,10 +83,10 @@ export const PerfilPage: React.FC = () => {
         navigate('/login');
     };
 
-    const onPedidoAtualizado = () => {
+    const onPedidoAtualizado = (pedidoAtualizado: Pedido) => {
         setModalEdicaoAberto(null);
+        setPedidos(prev => prev.map(p => p.id === pedidoAtualizado.id ? pedidoAtualizado : p));
         setNotification({ message: 'Pedido atualizado com sucesso!', type: 'success' });
-        fetchProfileData();
     };
 
     const onPedidoDeletado = (pedidoId: string) => {
@@ -96,11 +97,23 @@ export const PerfilPage: React.FC = () => {
     const handleManifestarInteresse = async (pedidoId: string) => {
         try {
             await api.post(`/pedidos/${pedidoId}/interesse`);
-            setPedidos(pedidosAtuais =>
-                pedidosAtuais.map(p =>
-                    p.id === pedidoId ? { ...p, usuarioJaDemonstrouInteresse: true } : p
-                )
-            );
+            setPedidos(pedidosAtuais => {
+                return pedidosAtuais.map(p => {
+                    if (p.id !== pedidoId) return p;
+ 
+                    // Atualização otimista: adiciona o usuário logado à lista de interesses
+                    const novoInteresse: Interesse = {
+                        user: { id: loggedInUser!.id, name: loggedInUser!.name, avatar: loggedInUser!.avatar }
+                    };
+ 
+                    return {
+                        ...p,
+                        usuarioJaDemonstrouInteresse: true,
+                        interessesCount: (p.interessesCount || 0) + 1,
+                        interesses: [...(p.interesses || []), novoInteresse],
+                    };
+                })
+            });
             setNotification({ message: 'Interesse registrado! O morador foi notificado.', type: 'success' });
         } catch (error: any) {
             const message = error.response?.data?.message || 'Erro ao registrar interesse.';
@@ -178,13 +191,13 @@ export const PerfilPage: React.FC = () => {
                             pedidos.map(pedido => (
                                 <PedidoCard                                    
                                     key={pedido.id}
-                                    // Constrói o objeto 'Pedido' completo esperado pelo PedidoCard
+                                    // Constrói o objeto 'pedido' completo, adicionando o autor
                                     pedido={{
-                                        ...pedido, 
-                                        author: { 
-                                            id: profileUser.id, 
-                                            name: profileUser.name, 
-                                            avatar: profileUser.avatar 
+                                        ...pedido,
+                                        author: {
+                                            id: profileUser.id,
+                                            name: profileUser.name,
+                                            avatar: profileUser.avatar,
                                         }
                                     }}
                                     loggedInUser={loggedInUser}
@@ -207,7 +220,6 @@ export const PerfilPage: React.FC = () => {
                     pedido={modalEdicaoAberto}
                     onClose={() => setModalEdicaoAberto(null)}
                     onPedidoAtualizado={onPedidoAtualizado}
-                    setNotification={setNotification}
                 />
             )}
         </div>

@@ -8,6 +8,7 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Loader } from '../components/Ui/Loader';
 import Notification from '../components/Notification';
+import { InterestedUsersStack } from '../components/InterestedUsersStack';
 import { createResourceURL } from '@/utils/createResourceURL';
 
 type PedidoDetalhado = {
@@ -21,7 +22,15 @@ type PedidoDetalhado = {
     id: string;
     name: string;
   };
+  interesses: {
+    user: {
+      id: string;
+      name: string;
+      avatar?: string;
+    };
+  }[];
   usuarioJaDemonstrouInteresse: boolean;
+  interessesCount: number;
 };
 
 export function DetalhesPedido() {
@@ -153,6 +162,17 @@ export function DetalhesPedido() {
               </div>
             </div>
           </div>
+
+          {/* Adiciona a lista de interessados */}
+          {pedido.interesses && pedido.interesses.length > 0 && (
+            <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-semibold text-slate-800 mb-4">Interessados</h3>
+              <InterestedUsersStack
+                interesses={pedido.interesses}
+                totalCount={pedido.interessesCount}
+              />
+            </div>
+          )}
         </div>
       </main>
     </div>

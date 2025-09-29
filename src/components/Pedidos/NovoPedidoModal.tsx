@@ -2,16 +2,42 @@ import React, { useState, type FormEvent, useRef } from 'react';
 import { api } from '../../services/api';
 import { Camera, X } from 'lucide-react';
 
+// Adicionando o tipo Pedido para alinhar com o Dashboard
+type Author = {
+    id: string;
+    name: string;
+    avatar?: string;
+};
+
+type Interesse = {
+    user: {
+        id: string;
+        name: string;
+        avatar?: string;
+    }
+};
+
+type Pedido = {
+    id: string;
+    titulo: string;
+    descricao: string;
+    imagem?: string;
+    createdAt: string;
+    author: Author;
+    usuarioJaDemonstrouInteresse: boolean;
+    interesses: Interesse[];
+    interessesCount: number;
+};
+
 const XIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 
 interface NovoPedidoModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onPedidoCriado: () => void;
-    setNotification: (notification: { message: string; type: 'success' | 'error' } | null) => void;
+    onPedidoCriado: (novoPedido: Pedido) => void;
 }
 
-export const NovoPedidoModal: React.FC<NovoPedidoModalProps> = ({ isOpen, onClose, onPedidoCriado, setNotification }) => {
+export const NovoPedidoModal: React.FC<NovoPedidoModalProps> = ({ isOpen, onClose, onPedidoCriado }) => {
     const [titulo, setTitulo] = useState('');
     const [descricao, setDescricao] = useState('');
     // NOVOS ESTADOS: Para o arquivo da imagem e sua pré-visualização
@@ -25,8 +51,7 @@ export const NovoPedidoModal: React.FC<NovoPedidoModalProps> = ({ isOpen, onClos
     const handleCreate = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!titulo.trim() || !descricao.trim()) {
-            setNotification({ message: 'Título e descrição são obrigatórios.', type: 'error' });
-            return;
+            return; // A validação do backend cuidará disso, ou podemos adicionar notificação no Dashboard
         }
         setLoading(true);
 
@@ -39,16 +64,16 @@ export const NovoPedidoModal: React.FC<NovoPedidoModalProps> = ({ isOpen, onClos
         }
 
         try {
-            await api.post('/pedidos', formData);
+            const response = await api.post('/pedidos', formData);
             // Limpa o formulário e chama o callback de sucesso
             setTitulo('');
             setDescricao('');
             setImagemFile(null);
             setImagemPreview('');
-            onPedidoCriado();
+            onPedidoCriado(response.data);
         } catch (error) {
-            const message = (error as any).response?.data?.message || 'Não foi possível criar o pedido.';
-            setNotification({ message, type: 'error' });
+            // O Dashboard já lida com a exibição de erros da API
+            console.error("Erro ao criar pedido:", error);
         } finally {
             setLoading(false);
         }

@@ -4,7 +4,7 @@ import { api } from '../../services/api';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { MoreHorizontal, Edit, Trash2, Check } from 'lucide-react';
-import type { User } from '../../context/AuthContext';
+import type { User } from '../../context/AuthContext'; // Ajuste no tipo
 import { createResourceURL } from '@/utils/createResourceURL';
 import { InterestedUsersStack } from '../InterestedUsersStack';
 
@@ -31,7 +31,7 @@ type Pedido = {
     createdAt: string;
     author: Author;
     usuarioJaDemonstrouInteresse: boolean;
-    interesses: Interesse[]; 
+    interesses: Interesse[];
     interessesCount: number; 
 };
 
@@ -119,8 +119,8 @@ export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, on
             <p className="mt-1 text-slate-600 line-clamp-3">{pedido.descricao}</p>
         </div>
 
-        {pedido.interessesCount > 0 && (
-            <div className="mt-4 pt-4 border-t border-slate-200">
+        {(pedido.interesses?.length > 0 || pedido.interessesCount > 0) && (
+            <div className="mt-4">
                 <InterestedUsersStack
                     interesses={pedido.interesses}
                     totalCount={pedido.interessesCount}

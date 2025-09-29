@@ -1,19 +1,43 @@
 import React, { useState, useEffect, type FormEvent } from 'react';
 import { api } from '../../services/api';
 
-// Tipos
-type Pedido = { id: string; titulo: string; descricao: string; };
+// Tipos completos para o pedido
+type Author = {
+    id: string;
+    name: string;
+    avatar?: string;
+};
+
+// Adicionando o tipo Interesse para completar o Pedido
+type Interesse = {
+    user: {
+        id: string;
+        name: string;
+        avatar?: string;
+    }
+};
+
+type Pedido = {
+    id: string;
+    titulo: string;
+    descricao: string;
+    imagem?: string;
+    createdAt: string;
+    author: Author;
+    interessesCount: number;
+    usuarioJaDemonstrouInteresse: boolean; // Propriedade adicionada
+    interesses: Interesse[]; // Propriedade adicionada
+};
 
 const XIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 
 interface EditarPedidoModalProps {
     pedido: Pedido;
     onClose: () => void;
-    onPedidoAtualizado: () => void;
-    setNotification: (notification: { message: string; type: 'success' | 'error' } | null) => void;
+    onPedidoAtualizado: (pedidoAtualizado: Pedido) => void;
 }
 
-export const EditarPedidoModal: React.FC<EditarPedidoModalProps> = ({ pedido, onClose, onPedidoAtualizado, setNotification }) => {
+export const EditarPedidoModal: React.FC<EditarPedidoModalProps> = ({ pedido, onClose, onPedidoAtualizado }) => {
     const [titulo, setTitulo] = useState(pedido.titulo);
     const [descricao, setDescricao] = useState(pedido.descricao);
     const [loading, setLoading] = useState(false);
@@ -27,17 +51,17 @@ export const EditarPedidoModal: React.FC<EditarPedidoModalProps> = ({ pedido, on
     const handleUpdate = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!titulo.trim() || !descricao.trim()) {
-            setNotification({ message: 'Título e descrição são obrigatórios.', type: 'error' });
+            // A notificação de erro pode ser gerenciada pelo componente pai se necessário
             return;
         }
         setLoading(true);
 
         try {
-            await api.patch(`/pedidos/${pedido.id}`, { titulo, descricao });
-            onPedidoAtualizado();
-        } catch (error: any) {
-            const message = error.response?.data?.message || 'Não foi possível atualizar o pedido.';
-            setNotification({ message, type: 'error' });
+            const response = await api.patch(`/pedidos/${pedido.id}`, { titulo, descricao });
+            onPedidoAtualizado(response.data);
+        } catch (error) {
+            console.error('Erro ao atualizar o pedido:', error);
+            // O componente pai (Dashboard) já lida com notificações de erro da API
         } finally {
             setLoading(false);
         }

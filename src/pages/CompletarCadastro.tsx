@@ -13,6 +13,19 @@ import MaskedInput from '../components/MaskedInput';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
+// Componente customizado para o DatePicker, garantindo o estilo correto.
+const DatePickerInput = React.forwardRef<
+  HTMLInputElement, 
+  { value?: string; onClick?: () => void; onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void }
+>(({ value, onClick, onChange }, ref) => (
+  <MaskedInput
+    id="dataDeNascimento"
+    mask="00/00/0000"
+    onClick={onClick}
+    ref={ref}
+  />
+));
+
 const CompletarCadastroPage: React.FC = () => {
 
   const navigate = useNavigate();
@@ -21,7 +34,7 @@ const CompletarCadastroPage: React.FC = () => {
   const [formData, setFormData] = useState({
     cpf: '',
     telefone: '',
-    dataDeNascimento: '',
+    dataDeNascimento: null as Date | null,
     sexo: '',
     cep: '',
     rua: '',
@@ -58,8 +71,8 @@ const CompletarCadastroPage: React.FC = () => {
   };
 
   
-  const handleDateChange = (date: Date | null) => {
-    setFormData({ ...formData, dataDeNascimento: date ? date.toISOString().split('T')[0] : '' });
+  const handleDateChange = (date: Date | null) => { 
+    setFormData({ ...formData, dataDeNascimento: date });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -71,7 +84,7 @@ const CompletarCadastroPage: React.FC = () => {
     const data = new FormData();
     data.append('cpf', formData.cpf.replace(/\D/g, ''));
     data.append('telefone', formData.telefone.replace(/\D/g, ''));
-    if (formData.dataDeNascimento) data.append('dataDeNascimento', formData.dataDeNascimento);
+    if (formData.dataDeNascimento) data.append('dataDeNascimento', formData.dataDeNascimento.toISOString().split('T')[0]);
     if (formData.sexo) data.append('sexo', formData.sexo);
 
     // Adiciona o endereço no formato esperado pelo backend (geralmente `endereco[campo]`)
@@ -117,12 +130,15 @@ const CompletarCadastroPage: React.FC = () => {
           <MaskedInput id="telefone" label="Telefone" mask="(00) 00000-0000" value={formData.telefone} onChange={handleChange} required placeholder="(00) 00000-0000" autoComplete="off" />
           <div className="flex flex-col">
             <label className="mb-1 text-sm font-medium text-gray-700">Data de Nascimento</label>
-            <DatePicker
-              selected={formData.dataDeNascimento ? new Date(formData.dataDeNascimento + 'T00:00:00') : null}
+            <DatePicker              
+              selected={formData.dataDeNascimento}
               onChange={handleDateChange}
               dateFormat="dd/MM/yyyy"
               placeholderText="DD/MM/YYYY"
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              showYearDropdown
+              scrollableYearDropdown
+              yearDropdownItemNumber={80}
+              customInput={<DatePickerInput />}
             />
           </div>
           <Select id="sexo" label="Gênero" options={sexoOptions} value={formData.sexo} onChange={handleChange} />

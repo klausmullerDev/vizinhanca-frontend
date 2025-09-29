@@ -1,12 +1,13 @@
 import React from 'react';
 
 // Tipos
-type Author = { id: string; name: string };
-// 1. ATUALIZE O TIPO PEDIDO
+type Author = { id: string; name: string; avatar?: string; };
+
 type Pedido = {
     id: string;
     titulo: string;
     descricao: string;
+    imagem?: string;
     createdAt: string;
     author: Author;
     usuarioJaDemonstrouInteresse: boolean;
@@ -15,11 +16,9 @@ type User = { id: string; name: string | null; email: string; } | null;
 
 const XIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 
-// 2. ATUALIZE A INTERFACE DE PROPS
 interface DetalhesPedidoModalProps {
     pedido: Pedido;
     user: User;
-    // myInterests: Set<string>; << LINHA REMOVIDA
     onClose: () => void;
     onManifestarInteresse: (pedidoId: string) => void;
 }
@@ -45,8 +44,7 @@ export const DetalhesPedidoModal: React.FC<DetalhesPedidoModalProps> = ({ pedido
                             ) :
                                 // 3. ATUALIZE A CONDIÇÃO DO BOTÃO
                                 pedido.usuarioJaDemonstrouInteresse ? (
-                                    <button disabled className="w-full bg-green-600 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                                    <button disabled className="w-full bg-green-100 text-green-700 font-bold py-3 rounded-lg flex items-center justify-center gap-2">
                                         Interesse Enviado!
                                     </button>
                                 ) : (
