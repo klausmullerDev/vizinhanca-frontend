@@ -14,6 +14,7 @@ import { EmptyState } from '../components/Ui/EmptyState';
 import { FloatingActionButton } from '../components/Ui/FloatingActionButton';
 import { AppHeader } from '../components/Ui/AppHeader';
 import { NotificationsPanel } from '../components/Notifications/NotificationsPanel';
+import { RefreshCw } from 'lucide-react';
 
 type Author = {
     id: string;
@@ -54,6 +55,10 @@ export const Dashboard: React.FC = () => {
     const [modalDetalhesAberto, setModalDetalhesAberto] = useState<Pedido | null>(null);
     const [modalNovoPedidoAberto, setModalNovoPedidoAberto] = useState(false);
     const [modalEdicaoAberto, setModalEdicaoAberto] = useState<Pedido | null>(null);
+
+    // Estados para o "Puxar para Atualizar"
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [pullPosition, setPullPosition] = useState({ startY: 0, distance: 0 });
 
     // Alterado para aceitar um termo de busca
     const fetchPedidos = async (search = '') => {
@@ -147,6 +152,43 @@ export const Dashboard: React.FC = () => {
         }
     };
     
+    // --- Lógica para Puxar para Atualizar ---
+    const PULL_THRESHOLD = 80; // Distância em pixels para acionar o refresh
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        // Só inicia o gesto se o scroll estiver no topo
+        if (window.scrollY === 0) {
+            setPullPosition({ startY: e.targetTouches[0].clientY, distance: 0 });
+        }
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (pullPosition.startY === 0) return;
+
+        const currentY = e.targetTouches[0].clientY;
+        const distance = currentY - pullPosition.startY;
+
+        // Permite puxar para baixo e aplica uma resistência
+        if (distance > 0) {
+            e.preventDefault(); // Previne o scroll padrão do navegador
+            setPullPosition(prev => ({ ...prev, distance: distance / 2.5 }));
+        }
+    };
+
+    const handleTouchEnd = async () => {
+        if (pullPosition.startY === 0) return;
+
+        if (pullPosition.distance > PULL_THRESHOLD) {
+            setIsRefreshing(true);
+            await fetchPedidos(searchTerm);
+            setIsRefreshing(false);
+        }
+
+        // Reseta as posições
+        setPullPosition({ startY: 0, distance: 0 });
+    };
+    // --- Fim da Lógica ---
+
     const renderContent = () => {
         if (loading) {
             return <div className="flex justify-center pt-20"><Loader /></div>;
@@ -185,9 +227,23 @@ export const Dashboard: React.FC = () => {
                 notification={notification} 
                 onClose={() => setNotification(null)} 
             />
-            <main className="py-8 pb-24 px-4 max-w-2xl mx-auto">
-                {renderContent()}
-            </main>
+            <div 
+                className="relative"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+            >
+                {/* Indicador de Refresh */}
+                <div className="absolute top-0 left-0 right-0 flex justify-center pt-3" style={{ opacity: Math.min(pullPosition.distance / PULL_THRESHOLD, 1) }}>
+                    <RefreshCw 
+                        className={`text-slate-500 ${isRefreshing ? 'animate-spin' : ''}`} 
+                        style={{ transform: `rotate(${pullPosition.distance * 2}deg)` }}
+                    />
+                </div>
+                <main className="py-8 pb-24 px-4 max-w-2xl mx-auto transition-transform duration-200" style={{ transform: `translateY(${pullPosition.distance}px)` }}>
+                    {renderContent()}
+                </main>
+            </div>
             <FloatingActionButton onClick={() => setModalNovoPedidoAberto(true)} />
 
             <NotificationsPanel 

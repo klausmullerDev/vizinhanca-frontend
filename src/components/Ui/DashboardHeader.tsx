@@ -67,7 +67,7 @@ export function DashboardHeader() {
               <div className="py-2 px-3 border-b border-gray-100 flex-shrink-0">
                 <h3 className="text-lg font-semibold text-gray-900">Notificações</h3>
               </div>
-              <NotificationsList />
+              <NotificationsList onClose={() => setIsNotificationsOpen(false)} />
             </div>
             )}
         </div>
