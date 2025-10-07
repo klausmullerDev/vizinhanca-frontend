@@ -1,6 +1,14 @@
+export type NotificationType = 
+  | 'INTERESSE_RECEBIDO'
+  | 'AJUDANTE_ESCOLHIDO'
+  | 'PEDIDO_FINALIZADO'
+  | 'NOVA_MENSAGEM'
+  | 'AJUDANTE_DESISTIU'
+  | 'PEDIDO_CANCELADO';
+
 export interface ApiNotification {
   id: string;
-  tipo: 'INTERESSE_RECEBIDO';
+  tipo: NotificationType;
   mensagem: string;
   lida: boolean;
   createdAt: string;

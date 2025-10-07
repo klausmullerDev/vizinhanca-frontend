@@ -28,6 +28,7 @@ type Pedido = {
     id: string;
     titulo: string;
     descricao: string;
+    status: string; // Adicionado o status do pedido
     imagem?: string;
     createdAt: string;
     author: { id: string; name: string; avatar?: string; };
@@ -121,6 +122,17 @@ export const PerfilPage: React.FC = () => {
         }
     };
 
+    const handleCancelarPedido = async (pedidoId: string) => {
+        try {
+            const response = await api.patch(`/pedidos/${pedidoId}/cancelar`);
+            setPedidos(prev => prev.map(p => p.id === pedidoId ? response.data : p));
+            setNotification({ message: 'Pedido cancelado com sucesso.', type: 'success' });
+        } catch (error: any) {
+            const message = error.response?.data?.message || 'Erro ao cancelar o pedido.';
+            setNotification({ message, type: 'error' });
+        }
+    };
+
     if (loading) {
         return <div className="flex justify-center items-center h-screen"><Loader /></div>;
     }
@@ -204,6 +216,7 @@ export const PerfilPage: React.FC = () => {
                                     onManifestarInteresse={handleManifestarInteresse}
                                     onEditar={() => setModalEdicaoAberto(pedido)}
                                     onDeletar={onPedidoDeletado}
+                                    onCancelar={handleCancelarPedido}
                                 />
                             ))
                         ) : (

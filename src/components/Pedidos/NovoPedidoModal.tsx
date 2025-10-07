@@ -21,6 +21,7 @@ type Pedido = {
     id: string;
     titulo: string;
     descricao: string;
+    status: string;
     imagem?: string;
     createdAt: string;
     author: Author;

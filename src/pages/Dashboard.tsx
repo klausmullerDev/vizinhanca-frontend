@@ -35,6 +35,7 @@ type Pedido = {
     titulo: string;
     descricao: string;
     imagem?: string;
+    status: string; // Adicionado o status do pedido
     createdAt: string;
     author: Author;
     usuarioJaDemonstrouInteresse: boolean;
@@ -152,6 +153,20 @@ export const Dashboard: React.FC = () => {
         }
     };
     
+    const handleCancelarPedido = async (pedidoId: string) => {
+        try {
+            const response = await api.patch(`/pedidos/${pedidoId}/cancelar`);
+            // Atualiza o pedido específico na lista com os dados retornados pela API
+            setPedidos(prev => prev.map(p => p.id === pedidoId ? response.data : p));
+            setNotification({ message: 'Pedido cancelado com sucesso.', type: 'success' });
+        } catch (error: any) {
+            const message = error.response?.data?.message || 'Erro ao cancelar o pedido.';
+            setNotification({ message, type: 'error' });
+        }
+    };
+
+
+
     // --- Lógica para Puxar para Atualizar ---
     const PULL_THRESHOLD = 80; // Distância em pixels para acionar o refresh
 
@@ -209,6 +224,7 @@ export const Dashboard: React.FC = () => {
                         onManifestarInteresse={handleManifestarInteresse}
                         onEditar={() => setModalEdicaoAberto(pedido)}
                         onDeletar={onPedidoDeletado}
+                        onCancelar={handleCancelarPedido}
                     />
                 ))}
             </div>

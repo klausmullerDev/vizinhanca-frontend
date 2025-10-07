@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { MoreHorizontal, Edit, Trash2, Check } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, Check, XCircle } from 'lucide-react';
 import type { User } from '../../context/AuthContext'; // Ajuste no tipo
 import { createResourceURL } from '@/utils/createResourceURL';
 import { InterestedUsersStack } from '../InterestedUsersStack';
@@ -28,6 +28,7 @@ type Pedido = {
     titulo: string;
     descricao: string;
     imagem?: string;
+    status: string;
     createdAt: string;
     author: Author;
     usuarioJaDemonstrouInteresse: boolean;
@@ -41,9 +42,10 @@ interface CardPedidoProps {
   onManifestarInteresse: (pedidoId: string) => void;
   onEditar: () => void;
   onDeletar: (pedidoId: string) => void;
+  onCancelar: (pedidoId: string) => void;
 }
 
-export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, onManifestarInteresse, onEditar, onDeletar }) => {
+export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, onManifestarInteresse, onEditar, onDeletar, onCancelar }) => {
   const [menuAberto, setMenuAberto] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const isMyPedido = loggedInUser?.id === pedido.author.id;
@@ -67,6 +69,15 @@ export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, on
       } catch (error) {
         alert('Não foi possível apagar o pedido.');
       }
+    }
+  };
+
+  const handleCancel = async () => {
+    setMenuAberto(false);
+    if (window.confirm('Tem certeza que deseja cancelar este pedido? Esta ação não pode ser desfeita.')) {
+      // A lógica da API será chamada pelo componente pai (Dashboard/Perfil)
+      // para manter o estado centralizado.
+      onCancelar(pedido.id);
     }
   };
 
@@ -97,7 +108,12 @@ export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, on
                         <MoreHorizontal className="w-5 h-5 text-slate-500" />
                     </button>
                     <div ref={menuRef} className={`absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg border border-slate-200 transition-all z-10 ${menuAberto ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
-                        <button onClick={() => { onEditar(); setMenuAberto(false); }} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><Edit className="w-4 h-4" /> Editar</button>
+                        {pedido.status === 'ABERTO' && (
+                            <button onClick={() => { onEditar(); setMenuAberto(false); }} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><Edit className="w-4 h-4" /> Editar</button>
+                        )}
+                        {['ABERTO', 'EM_ANDAMENTO'].includes(pedido.status) && (
+                            <button onClick={handleCancel} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><XCircle className="w-4 h-4" /> Cancelar</button>
+                        )}
                         <button onClick={handleDelete} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"><Trash2 className="w-4 h-4" /> Apagar</button>
                     </div>
                 </div>
@@ -129,20 +145,36 @@ export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, on
         )}
 
         <div className="mt-4 pt-4 border-t border-slate-200">
-            {isMyPedido ? (
-                <button disabled className="w-full bg-slate-100 text-slate-500 font-bold py-2 px-4 rounded-lg cursor-not-allowed">
-                    Este é o seu pedido
+            <Link to={`/pedidos/${pedido.id}`} className="w-full">
+                <button 
+                    className="w-full font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    // Desabilita o clique se não for para a página de detalhes
+                    onClick={(e) => {
+                        // Se o pedido não estiver aberto e não for o do usuário, o botão é só um link
+                        if (pedido.status !== 'ABERTO' || isMyPedido) {
+                            return;
+                        }
+                        // Se for para manifestar interesse, previne a navegação e chama a função
+                        if (!pedido.usuarioJaDemonstrouInteresse) {
+                            e.preventDefault();
+                            onManifestarInteresse(pedido.id);
+                        }
+                    }}
+                    // Estilo dinâmico baseado no status
+                    style={{
+                        backgroundColor: isMyPedido ? '#f1f5f9' : (pedido.status !== 'ABERTO' ? '#f1f5f9' : (pedido.usuarioJaDemonstrouInteresse ? '#dcfce7' : '#4f46e5')),
+                        color: isMyPedido ? '#64748b' : (pedido.status !== 'ABERTO' ? '#64748b' : (pedido.usuarioJaDemonstrouInteresse ? '#166534' : 'white')),
+                        cursor: (isMyPedido || (pedido.status !== 'ABERTO')) ? 'pointer' : (pedido.usuarioJaDemonstrouInteresse ? 'pointer' : 'pointer'),
+                    }}
+                >
+                    {isMyPedido && 'Ver meu pedido'}
+                    {!isMyPedido && pedido.status === 'ABERTO' && !pedido.usuarioJaDemonstrouInteresse && 'Eu quero ajudar!'}
+                    {!isMyPedido && pedido.status === 'ABERTO' && pedido.usuarioJaDemonstrouInteresse && <><Check className="w-5 h-5" /> Interesse Enviado</>}
+                    {!isMyPedido && pedido.status === 'EM_ANDAMENTO' && 'Ver andamento'}
+                    {!isMyPedido && pedido.status === 'CANCELADO' && 'Pedido cancelado'}
+                    {!isMyPedido && pedido.status === 'FINALIZADO' && 'Ver detalhes'}
                 </button>
-            ) : pedido.usuarioJaDemonstrouInteresse ? (
-                <button disabled className="w-full bg-green-100 text-green-700 font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2">
-                    <Check className="w-5 h-5" />
-                    Interesse Enviado!
-                </button>
-            ) : (
-                <button onClick={() => onManifestarInteresse(pedido.id)} className="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors">
-                    Eu quero ajudar!
-                </button>
-            )}
+            </Link>
         </div>
     </div>
   );

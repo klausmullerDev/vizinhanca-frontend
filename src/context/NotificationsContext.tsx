@@ -9,7 +9,20 @@ type Remetente = {
   avatar?: string;
 };
 
-export type ApiNotification = { id: string; mensagem: string; lida: boolean; createdAt: string; pedidoId?: string; remetente?: Remetente; };
+export type NotificationType = 
+  | 'INTERESSE_RECEBIDO'
+  | 'AJUDANTE_ESCOLHIDO'
+  | 'PEDIDO_FINALIZADO'
+  | 'NOVA_MENSAGEM'
+  | 'AJUDANTE_DESISTIU'
+  | 'PEDIDO_CANCELADO';
+
+export type ApiNotification = { id: string;
+  tipo: NotificationType;
+  mensagem: string;
+  lida: boolean;
+  createdAt: string;
+  pedidoId?: string; remetente?: Remetente; };
 
 interface NotificationsContextData {
   notifications: ApiNotification[];
