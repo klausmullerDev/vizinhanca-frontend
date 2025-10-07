@@ -38,6 +38,14 @@ type PedidoDetalhado = {
   interessesCount: number;
 };
 
+// Tipo alinhado com a nova documentação da API
+type ChatResumo = {
+  id: string;
+  participantes: {
+    id: string;
+  }[];
+};
+
 export function DetalhesPedido() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -47,6 +55,7 @@ export function DetalhesPedido() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [chatsDoPedido, setChatsDoPedido] = useState<ChatResumo[]>([]);
 
   useEffect(() => {
     if (!id) return;
@@ -56,7 +65,15 @@ export function DetalhesPedido() {
         setLoading(true);
         setError(null);
         const response = await api.get(`/pedidos/${id}`);
-        setPedido(response.data);
+        const pedidoData = response.data;
+        setPedido(pedidoData);
+
+        // Se o usuário logado for o autor OU já demonstrou interesse, busca os chats.
+        if (user?.id === pedidoData.author.id || pedidoData.usuarioJaDemonstrouInteresse) {
+          // AJUSTE: A rota para buscar chats de um pedido foi atualizada.
+          const chatsResponse = await api.get(`/pedidos/${id}/chats`);
+          setChatsDoPedido(chatsResponse.data);
+        }
       } catch (err: any) {
         setError('Não foi possível encontrar este pedido. Ele pode ter sido removido.');
       } finally {
@@ -65,7 +82,7 @@ export function DetalhesPedido() {
     }
 
     carregarDetalhes();
-  }, [id]);
+  }, [id, user?.id]);
 
   const handleManifestarInteresse = async () => {
     if (!pedido) return;
@@ -116,6 +133,32 @@ export function DetalhesPedido() {
     } catch (error: any) {
       const message = error.response?.data?.message || 'Erro ao desistir da ajuda.';
       setNotification({ message, type: 'error' });
+    }
+  };
+
+  const handleIniciarConversa = async (destinatarioId: string) => {
+    if (!pedido || !user) return;
+
+    // Verifica se já existe um chat com este usuário
+    const chatExistente = chatsDoPedido.find((chat) =>
+      chat.participantes.some((p) => p.id === destinatarioId)
+    );
+
+    if (chatExistente) {
+      navigate(`/chat/${chatExistente.id}`);
+    } else {
+      try {
+        // Cria um novo chat se não existir
+        const response = await api.post('/chats', {
+          pedidoId: pedido.id,
+          destinatarioId: destinatarioId,
+        });
+        const { id: chatId } = response.data;
+        // Navega para a página de chat
+        navigate(`/chat/${chatId}`);
+      } catch (error) {
+        setNotification({ message: 'Não foi possível iniciar a conversa.', type: 'error' });
+      }
     }
   };
 
@@ -193,10 +236,17 @@ export function DetalhesPedido() {
     if (pedido.status === 'ABERTO') {
       if (pedido.usuarioJaDemonstrouInteresse) {
         return (
-          <button disabled className="w-full bg-green-100 text-green-700 font-bold py-3 rounded-lg flex items-center justify-center gap-2">
-            <Check className="w-5 h-5" />
-            Interesse Enviado!
-          </button>
+          <div className="space-y-3">
+            <button disabled className="w-full bg-green-100 text-green-700 font-bold py-3 rounded-lg flex items-center justify-center gap-2">
+              <Check className="w-5 h-5" />
+              Interesse Enviado!
+            </button>
+            {/* Botão para o interessado iniciar a conversa */}
+            <button onClick={() => handleIniciarConversa(pedido.author.id)} className="w-full bg-white border border-slate-300 text-slate-700 font-bold py-3 rounded-lg hover:bg-slate-50 transition-colors flex items-center justify-center gap-2">
+              <MessageSquare className="w-5 h-5" />
+              Conversar com o autor
+            </button>
+          </div>
         );
       }
       return (
@@ -309,7 +359,7 @@ export function DetalhesPedido() {
                       <span className="font-semibold text-slate-700 group-hover:text-indigo-600 truncate">{interesse.user.name}</span>
                     </Link>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <button title="Iniciar conversa" className="p-2 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors">
+                      <button onClick={() => handleIniciarConversa(interesse.user.id)} title="Iniciar conversa" className="p-2 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors">
                         <MessageSquare className="w-5 h-5" />
                       </button>
                       <button onClick={() => handleEscolherAjudante(interesse.user.id)} className="text-sm font-semibold bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full hover:bg-indigo-200 transition-colors">

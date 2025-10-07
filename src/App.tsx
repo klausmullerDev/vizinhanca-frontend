@@ -12,6 +12,7 @@ import CompletarCadastroPage from './pages/CompletarCadastro';
 import { DetalhesPedido } from './pages/DetalhesPedido';
 import { PerfilPage } from './pages/PerfilPage';
 import { EditarPerfilPage } from './pages/EditarPerfilPage';
+import { ChatPage } from './pages/ChatPage';
 import { EsqueciSenhaPage } from './pages/EsqueciSenhaPage.tsx'; 
 import { RedefinirSenhaPage } from './pages/RedefinirSenhaPage';
 
@@ -80,6 +81,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <EditarPerfilPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/chat/:chatId" 
+            element={
+              <ProtectedRoute>
+                <ChatPage />
               </ProtectedRoute>
             } 
           />
