@@ -156,7 +156,7 @@ export const Dashboard: React.FC = () => {
     const handleCancelarPedido = async (pedidoId: string) => {
         try {
             const response = await api.patch(`/pedidos/${pedidoId}/cancelar`);
-            // Atualiza o pedido específico na lista com os dados retornados pela API
+            // Com a API retornando o objeto completo, a mesclagem não é mais necessária.
             setPedidos(prev => prev.map(p => p.id === pedidoId ? response.data : p));
             setNotification({ message: 'Pedido cancelado com sucesso.', type: 'success' });
         } catch (error: any) {

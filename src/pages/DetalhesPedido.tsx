@@ -113,7 +113,7 @@ export function DetalhesPedido() {
     if (!window.confirm("Tem certeza que deseja marcar este pedido como finalizado?")) return;
 
     try {
-      const response = await api.patch(`/pedidos/${pedido.id}/finalizar`);
+      const response = await api.post(`/pedidos/${pedido.id}/finalizar`);
       setPedido(response.data);
       setNotification({ message: 'Pedido finalizado com sucesso!', type: 'success' });
     } catch (error: any) {
@@ -127,7 +127,7 @@ export function DetalhesPedido() {
     if (!window.confirm("Tem certeza que deseja desistir desta ajuda? O autor será notificado.")) return;
 
     try {
-      const response = await api.patch(`/pedidos/${pedido.id}/desistir`);
+      const response = await api.post(`/pedidos/${pedido.id}/desistir`);
       setPedido(response.data);
       setNotification({ message: 'Você desistiu da ajuda. O pedido está aberto novamente.', type: 'success' });
     } catch (error: any) {
@@ -187,12 +187,21 @@ export function DetalhesPedido() {
         case 'ABERTO':
           return <button disabled className="w-full bg-slate-200 text-slate-500 font-bold py-3 rounded-lg cursor-not-allowed">Aguardando interessados</button>;
         case 'EM_ANDAMENTO':
-          return (
-            <button onClick={handleFinalizarPedido} className="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
-              <Check className="w-5 h-5" />
-              Marcar como Finalizado
-            </button>
-          );
+          if (pedido.ajudante) { // Garante que o ajudante exista
+            return (
+              <div className="space-y-3">
+                 <button onClick={() => handleIniciarConversa(pedido.ajudante!.id)} className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2">
+                    <MessageSquare className="w-5 h-5" />
+                    Conversar com Ajudante
+                </button>
+                <button onClick={handleFinalizarPedido} className="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+                  <Check className="w-5 h-5" />
+                  Marcar como Finalizado
+                </button>
+              </div>
+            );
+          }
+          return null; // Caso não tenha ajudante (não deve acontecer em EM_ANDAMENTO)
         case 'FINALIZADO':
           return (
             <div className="text-center p-4 bg-green-50 border border-green-200 rounded-lg">
@@ -213,11 +222,17 @@ export function DetalhesPedido() {
       switch (pedido.status) {
         case 'EM_ANDAMENTO':
           return (
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
-              <p className="font-semibold text-blue-800">Você está ajudando!</p>
-              <p className="text-sm text-blue-600 mt-1">Entre em contato com {pedido.author?.name}.</p>
-              <button onClick={handleDesistir} className="mt-3 text-sm font-semibold text-red-600 hover:underline">
-                Desistir da ajuda
+            <div className="space-y-3">
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                <p className="font-semibold text-blue-800">Você está ajudando!</p>
+                <p className="text-sm text-blue-600 mt-1">Entre em contato com {pedido.author?.name}.</p>
+                <button onClick={handleDesistir} className="mt-3 text-sm font-semibold text-red-600 hover:underline">
+                  Desistir da ajuda
+                </button>
+              </div>
+              <button onClick={() => handleIniciarConversa(pedido.author.id)} className="w-full bg-white border border-slate-300 text-slate-700 font-bold py-3 rounded-lg hover:bg-slate-50 transition-colors flex items-center justify-center gap-2">
+                <MessageSquare className="w-5 h-5" />
+                Conversar com o autor
               </button>
             </div>
           );

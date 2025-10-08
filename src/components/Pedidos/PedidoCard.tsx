@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNowStrict } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { MoreHorizontal, Edit, Trash2, Check, XCircle } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, Check, XCircle, Loader2 } from 'lucide-react';
 import type { User } from '../../context/AuthContext'; // Ajuste no tipo
 import { createResourceURL } from '@/utils/createResourceURL';
 import { InterestedUsersStack } from '../InterestedUsersStack';
+import { StatusBadge } from './StatusBadge';
 
 
 type Author = {
@@ -46,8 +47,10 @@ interface CardPedidoProps {
 }
 
 export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, onManifestarInteresse, onEditar, onDeletar, onCancelar }) => {
+  const navigate = useNavigate();
   const [menuAberto, setMenuAberto] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [isInterestLoading, setIsInterestLoading] = useState(false);
   const isMyPedido = loggedInUser?.id === pedido.author.id;
 
   useEffect(() => {
@@ -81,11 +84,73 @@ export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, on
     }
   };
 
+  const handleInterestClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    setIsInterestLoading(true);
+    await onManifestarInteresse(pedido.id);
+    setIsInterestLoading(false);
+  };
+
   const avatarSrc = createResourceURL(pedido.author.avatar)
     || `https://ui-avatars.com/api/?name=${encodeURIComponent(pedido.author.name)}&background=e0e7ff&color=4338ca&size=128`;
 
+  // Função auxiliar para gerenciar o botão de ação
+  const getActionButttonProps = () => {
+    if (isMyPedido) {
+      return {
+        text: 'Ver meu pedido',
+        className: 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+        action: (e: React.MouseEvent<HTMLButtonElement>) => navigate(`/pedidos/${pedido.id}`),
+        disabled: false,
+        icon: null,
+      };
+    }
+
+    switch (pedido.status) {
+      case 'ABERTO':
+        if (isInterestLoading) {
+          return {
+            text: 'Enviando...',
+            className: 'bg-indigo-400 text-white',
+            action: (e: React.MouseEvent<HTMLButtonElement>) => e.preventDefault(),
+            disabled: true,
+            icon: <Loader2 className="w-5 h-5 animate-spin" />,
+          };
+        }
+        if (pedido.usuarioJaDemonstrouInteresse) {
+          return {
+            text: 'Interesse Enviado',
+            className: 'bg-green-100 text-green-800 hover:bg-green-200',
+            action: (e: React.MouseEvent<HTMLButtonElement>) => navigate(`/pedidos/${pedido.id}`),
+            disabled: false,
+            icon: <Check className="w-5 h-5" />,
+          };
+        }
+        return {
+          text: 'Eu quero ajudar!',
+          className: 'bg-indigo-600 text-white hover:bg-indigo-700',
+          action: handleInterestClick,
+          disabled: false,
+          icon: null,
+        };
+      
+      case 'EM_ANDAMENTO':
+        return { text: 'Ver andamento', className: 'bg-slate-100 text-slate-600 hover:bg-slate-200', action: () => navigate(`/pedidos/${pedido.id}`), disabled: false, icon: null };
+      case 'FINALIZADO':
+        return { text: 'Ver detalhes', className: 'bg-slate-100 text-slate-600 hover:bg-slate-200', action: () => navigate(`/pedidos/${pedido.id}`), disabled: false, icon: null };
+      case 'CANCELADO':
+        return { text: 'Pedido cancelado', className: 'bg-slate-100 text-slate-500 cursor-not-allowed', action: (e: React.MouseEvent<HTMLButtonElement>) => e.preventDefault(), disabled: true, icon: null };
+      
+      default:
+        return { text: 'Ver detalhes', className: 'bg-slate-100 text-slate-600 hover:bg-slate-200', action: () => navigate(`/pedidos/${pedido.id}`), disabled: false, icon: null };
+    }
+  };
+
+  const actionButtonProps = getActionButttonProps();
+
   return (
-    <div className="bg-white rounded-lg overflow-hidden border border-slate-200/80 p-4">
+    <div className="relative bg-white rounded-lg overflow-hidden border border-slate-200/80 p-4">
+        {pedido.status !== 'ABERTO' && <StatusBadge status={pedido.status} />}
         <div className="flex justify-between items-start">
             <div className="flex items-center space-x-3">
                 <Link to={`/perfil/${pedido.author.id}`}>
@@ -98,13 +163,13 @@ export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, on
                 <div>
                     <Link to={`/perfil/${pedido.author.id}`} className="font-semibold text-slate-800 hover:underline">{pedido.author.name}</Link>
                     <p className="text-xs text-slate-500">
-                        {formatDistanceToNow(new Date(pedido.createdAt), { addSuffix: true, locale: ptBR })}
+                        {formatDistanceToNowStrict(new Date(pedido.createdAt), { addSuffix: true, locale: ptBR })}
                     </p>
                 </div>
             </div>
-            {isMyPedido && (
+            {isMyPedido && pedido.status !== 'CANCELADO' && pedido.status !== 'FINALIZADO' && (
                  <div className="relative group">
-                    <button onClick={() => setMenuAberto(!menuAberto)} className="p-2 rounded-full hover:bg-slate-100" aria-label="Opções do pedido">
+                    <button onClick={() => setMenuAberto(!menuAberto)} className="p-2 rounded-full hover:bg-slate-100 z-20 relative" aria-label="Opções do pedido">
                         <MoreHorizontal className="w-5 h-5 text-slate-500" />
                     </button>
                     <div ref={menuRef} className={`absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg border border-slate-200 transition-all z-10 ${menuAberto ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
@@ -145,36 +210,14 @@ export const PedidoCard: React.FC<CardPedidoProps> = ({ pedido, loggedInUser, on
         )}
 
         <div className="mt-4 pt-4 border-t border-slate-200">
-            <Link to={`/pedidos/${pedido.id}`} className="w-full">
-                <button 
-                    className="w-full font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-                    // Desabilita o clique se não for para a página de detalhes
-                    onClick={(e) => {
-                        // Se o pedido não estiver aberto e não for o do usuário, o botão é só um link
-                        if (pedido.status !== 'ABERTO' || isMyPedido) {
-                            return;
-                        }
-                        // Se for para manifestar interesse, previne a navegação e chama a função
-                        if (!pedido.usuarioJaDemonstrouInteresse) {
-                            e.preventDefault();
-                            onManifestarInteresse(pedido.id);
-                        }
-                    }}
-                    // Estilo dinâmico baseado no status
-                    style={{
-                        backgroundColor: isMyPedido ? '#f1f5f9' : (pedido.status !== 'ABERTO' ? '#f1f5f9' : (pedido.usuarioJaDemonstrouInteresse ? '#dcfce7' : '#4f46e5')),
-                        color: isMyPedido ? '#64748b' : (pedido.status !== 'ABERTO' ? '#64748b' : (pedido.usuarioJaDemonstrouInteresse ? '#166534' : 'white')),
-                        cursor: (isMyPedido || (pedido.status !== 'ABERTO')) ? 'pointer' : (pedido.usuarioJaDemonstrouInteresse ? 'pointer' : 'pointer'),
-                    }}
-                >
-                    {isMyPedido && 'Ver meu pedido'}
-                    {!isMyPedido && pedido.status === 'ABERTO' && !pedido.usuarioJaDemonstrouInteresse && 'Eu quero ajudar!'}
-                    {!isMyPedido && pedido.status === 'ABERTO' && pedido.usuarioJaDemonstrouInteresse && <><Check className="w-5 h-5" /> Interesse Enviado</>}
-                    {!isMyPedido && pedido.status === 'EM_ANDAMENTO' && 'Ver andamento'}
-                    {!isMyPedido && pedido.status === 'CANCELADO' && 'Pedido cancelado'}
-                    {!isMyPedido && pedido.status === 'FINALIZADO' && 'Ver detalhes'}
-                </button>
-            </Link>
+            <button
+                onClick={actionButtonProps.action}
+                disabled={actionButtonProps.disabled}
+                className={`w-full font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${actionButtonProps.className}`}
+            >
+                {actionButtonProps.icon}
+                {actionButtonProps.text}
+            </button>
         </div>
     </div>
   );
