@@ -5,6 +5,7 @@ import { ptBR } from 'date-fns/locale';
 import { ArrowLeft, Send, User } from 'lucide-react';
 
 import { api } from '../services/api';
+import { socket } from '../services/socket'; // 1. Importa a instância do socket
 import { useAuth } from '../context/AuthContext';
 import { Loader } from '../components/Ui/Loader';
 import { createResourceURL } from '@/utils/createResourceURL';
@@ -18,6 +19,7 @@ type Sender = {
 type Mensagem = {
     id: string;
     conteudo: string;
+    chatId: string; // Adicionado conforme documentação do evento 'nova-mensagem'
     createdAt: string;
     senderId: string;
     sender: Sender;
@@ -50,11 +52,9 @@ export function ChatPage() {
 
         async function carregarChat() {
             try {
-                setLoading(true);
-                // CORREÇÃO: Fazemos duas chamadas em paralelo. Uma para os detalhes do chat (que agora existe)
-                // e outra para as mensagens.
+                setLoading(true);                
                 const [chatDetailsRes, mensagensRes] = await Promise.all([
-                    api.get<ChatDetails>(`/chats/${chatId}`), // Endpoint para detalhes do chat
+                    api.get<ChatDetails>(`/chats/${chatId}`),
                     api.get<Mensagem[]>(`/chats/${chatId}/mensagens`) // Endpoint para as mensagens
                 ]);
                 setChatDetails(chatDetailsRes.data);
@@ -69,6 +69,33 @@ export function ChatPage() {
         carregarChat();
     }, [chatId]);
 
+    // 2. Efeito para gerenciar a conexão WebSocket e a sala do chat
+    useEffect(() => {
+        if (!chatId) return;
+
+        // Conecta ao servidor
+        socket.connect();
+        // Entra na sala específica do chat
+        socket.emit('join-chat', chatId);
+
+        // Função para lidar com novas mensagens recebidas via WebSocket
+        const handleNovaMensagem = (mensagem: Mensagem) => {
+            // Adiciona a nova mensagem ao estado, atualizando a UI
+            setMensagens((prevMensagens) => [...prevMensagens, mensagem]);
+        };
+
+        // Começa a ouvir por novas mensagens
+        socket.on('nova-mensagem', handleNovaMensagem);
+
+        // Função de limpeza: executada quando o componente é desmontado
+        return () => {
+            socket.emit('leave-chat', chatId); // Sai da sala
+            socket.off('nova-mensagem', handleNovaMensagem); // Para de ouvir o evento
+            socket.disconnect(); // Desconecta do servidor
+        };
+
+    }, [chatId]);
+
     // Efeito para rolar para a última mensagem
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -80,10 +107,11 @@ export function ChatPage() {
 
         setSending(true);
         try {
-            const response = await api.post(`/chats/${chatId}/mensagens`, {
+            // 3. O envio continua via POST, mas não precisamos mais da resposta
+            await api.post(`/chats/${chatId}/mensagens`, {
                 conteudo: novoConteudo,
             });
-            setMensagens(prev => [...prev, response.data]);
+            // A atualização da UI agora é feita pelo listener do WebSocket ('nova-mensagem')
             setNovoConteudo('');
         } catch (error) {
             console.error("Erro ao enviar mensagem:", error);
