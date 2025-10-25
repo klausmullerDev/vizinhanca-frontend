@@ -1,33 +1,17 @@
 import React, { useState, useEffect, type FormEvent } from 'react';
 import { api } from '../../services/api';
 
-// Tipos completos para o pedido
-type Author = {
-    id: string;
-    name: string;
-    avatar?: string;
-};
-
-// Adicionando o tipo Interesse para completar o Pedido
-type Interesse = {
-    user: {
-        id: string;
-        name: string;
-        avatar?: string;
-    }
-};
-
 type Pedido = {
     id: string;
     titulo: string;
     descricao: string;
-    status: string; // Propriedade adicionada
+    status: 'ABERTO' | 'EM_ANDAMENTO' | 'CONCLUIDO' | 'CANCELADO';
     imagem?: string;
     createdAt: string;
-    author: Author;
+    author: { id: string; name: string; avatar?: string; };
+    usuarioJaDemonstrouInteresse: boolean;
+    interesses: any[];
     interessesCount: number;
-    usuarioJaDemonstrouInteresse: boolean; // Propriedade adicionada
-    interesses: Interesse[]; // Propriedade adicionada
 };
 
 const XIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
@@ -69,7 +53,13 @@ export const EditarPedidoModal: React.FC<EditarPedidoModalProps> = ({ pedido, on
     };
 
     return (
-        <>
+        <>  <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+                <h2 className="text-xl font-bold">Editando: {pedido.titulo}</h2>
+                {/* SEU FORMULÁRIO DE EDIÇÃO VEM AQUI */}
+                <button onClick={onClose} className="mt-4">Fechar</button>
+            </div>
+            </div>
             <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30" onClick={onClose}></div>
             <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
                 <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg animate-in fade-in-0 zoom-in-95" onClick={(e) => e.stopPropagation()}>
